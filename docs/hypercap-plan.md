@@ -72,11 +72,32 @@ máscara → captioner → dos captions → componer descripción de cambio.
 - Opción simple: plantilla. Opción rica: pasar ambos captions a un LLM o usar el
   scoring diferencial CLIP como verificación cruzada.
 
-## Preguntas abiertas (resolver en Fase 0)
-- [ ] ¿El repo publica checkpoints entrenados o solo código de entrenamiento?
-- [ ] ¿Captioning por píxel, por patch o por imagen? ¿Qué tamaño de patch?
-- [ ] ¿Qué formato espectral espera el encoder (nº bandas, normalización)?
-- [ ] ¿Licencia del dataset/código compatible con uso académico nuestro?
+## Fase 0 — COMPLETADA 2026-06-11. Hallazgos:
+
+- [x] **Checkpoints: NO hay.** El repo solo trae código de entrenamiento → hay que
+  entrenar nosotros (Colab/Kaggle con GPU).
+- [x] **Captioning por píxel con contexto de patch 11×11** centrado en el píxel.
+  El dataset asigna un caption único por píxel etiquetado desde el pool de su clase.
+- [x] **Formato espectral: bandas CRUDAS del sensor de cada escena** (IP 200,
+  KSC 176, Botswana 145, Houston13 48). El tutorial NO normaliza los patches.
+- [x] **Licencia MIT**; paper publicado en IEEE GRSM 2026 (DOI 10.1109/MGRS.2026.3693613).
+
+Hallazgos extra:
+- **FAHM (el encoder del tutorial) requiere `mamba_ssm` → CUDA-only**, no corre en
+  esta máquina ni para inferencia. Los otros 3 encoders (3D-ConvSST, DBCTNet,
+  3D-RCNet) son CPU-friendly. **Decisión: usar 3D-ConvSST** — rinde ~igual que FAHM
+  en los benchmarks del paper (99.4-100% OA multimodal) y solo necesita torch+einops.
+- 3D-ConvSST debe construirse con `embed_dim=64, n_heads=8` (su conv produce 64
+  canales) + adapter `Linear(64, 768)` hacia BLIP. Patch 11×11 HARDCODEADO
+  (pos_embed de 121 tokens).
+- `model/blipcaptioning.py` y `model/text/gpt.py` FALTAN en el repo (solo hay .pyc
+  compilados de py3.9) → el tutorial no corre tal cual. El
+  `BlipForConditionalGeneration` stock de `transformers` funciona como reemplazo
+  (verificado).
+- **Plomería verificada en CPU** (`experiments/hypercap_smoke.py`): patch real de
+  Indian Pines → 3D-ConvSST → BLIP.generate() → texto. Sin entrenar genera texto
+  basura ("the the the..."), como se espera; el camino mecánico completo funciona.
+- BLIP-base ya descargado en la caché HF local (~1 GB).
 
 ## Riesgos
 - **GPU**: entrenar BLIP/GIT sobre HyperCap no es viable en CPU. Si no hay

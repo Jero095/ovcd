@@ -9,8 +9,9 @@ weights/
 hyperglobal/imgs/
 hyperglobal_sample/
 
-# Repo vendoreado (tiene su propia historia)
+# Repos vendoreados (tienen su propia historia)
 HyperSIGMA/
+HyperCap/
 
 # Salidas y material de referencia
 *.png
