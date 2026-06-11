@@ -15,12 +15,13 @@
    `stages/labeling/clip_stage.py` (Fase 2 de `next_steps.md`).
 3. **Evaluación cuantitativa** — dataset GETNET (EO-1 Hyperion con ground truth),
    script `evaluate.py` con F1/Precision/Recall (Fase 3 de `next_steps.md`).
-4. **Integración HyperCap** — Fase 0 (reconocimiento) COMPLETADA 2026-06-11:
-   repo clonado en `HyperCap/`, dataset completo incluido, plomería
-   HSI→3D-ConvSST→BLIP verificada en CPU (`experiments/hypercap_smoke.py`,
-   ejecutar desde la raíz). NO hay checkpoints publicados → **siguiente paso:
-   entrenar BLIP + 3D-ConvSST en Colab/Kaggle (GPU)** y traer los pesos.
-   Hallazgos completos en `docs/hypercap-plan.md` (sección Fase 0).
+4. **Integración HyperCap** — Fases 0, 1 (código) y 2 COMPLETADAS 2026-06-11:
+   etapa `stages/captioning/` integrada (`--captions` en el CLI), script de
+   entrenamiento listo en `experiments/train_captioner_colab.py`.
+   **ÚNICO PASO PENDIENTE: entrenar en Colab (GPU, ~1-2 h en T4) y poner el
+   checkpoint en `weights/`** — sin él los captions son texto sin sentido.
+   Después: Fase 3 (caption de cambio bitemporal + captions en la visualización).
+   Detalles en `docs/hypercap-plan.md`.
 
 ## Problemas conocidos / deuda
 - ~~Pipeline no determinista~~ **RESUELTO 2026-06-11**: el checkpoint de HyperSIGMA

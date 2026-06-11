@@ -51,20 +51,27 @@ máscara → captioner → dos captions → componer descripción de cambio.
    tenemos `Indian_pines_corrected.mat` local en HyperSIGMA/ImageClassification/data.
    Meta: UN caption generado de un patch conocido.
 
-### Fase 1 — Captioner standalone
-- Si hay checkpoints → wrapper de inferencia. Si NO hay → entrenar con su código
-  (necesita GPU; ver Riesgos).
-- `stages/captioning/captioner.py`: `load_captioner(checkpoint, device)` +
-  `caption_patch(hsi_patch) -> str`. Modelo cargado UNA vez, reutilizable.
+### Fase 1 — Captioner standalone — CÓDIGO COMPLETO 2026-06-11 (falta entrenar)
+- `stages/captioning/captioner.py`: `load_captioner()`, `caption_patch()`,
+  `caption_regions()`. Encoder 3D-ConvSST + BLIP-base; espacio espectral
+  `CAPTIONER_WAVELENGTHS` (200 bandas, 400-2500 nm, aprox. Indian Pines/AVIRIS).
+- Script de entrenamiento listo: `experiments/train_captioner_colab.py`
+  (autocontenido para Colab GPU; ~1-2 h en T4 con Indian Pines).
+  **PENDIENTE: ejecutarlo en Colab y traer el .pth a `weights/`.**
+- Decisión de diseño: entrenamiento e inferencia normalizan [0,1] POR BANDA
+  (difiere del tutorial, que usa valores crudos) para casar con los cubos
+  alineados del pipeline.
 
-### Fase 2 — Integración al pipeline
-- Nueva etapa `stages/captioning/` con su CLAUDE.md.
-- `caption_regions(t1_al, t2_al, detections) -> detections` añade `caption_t1`,
-  `caption_t2`. Los crops salen del cubo alineado usando bbox + máscara SAM.
-- Alineación: usar `align_spectral` con el `target_wl` que espere el captioner
-  (cada escena HyperCap usa sensor distinto — decidir en Fase 0).
-- CLI: flag `--captions` (apagado por defecto: es costoso).
-- Visualización: caption corto bajo la etiqueta CLIP en el panel 4.
+### Fase 2 — Integración al pipeline — COMPLETADA 2026-06-11
+- Etapa `stages/captioning/` con su CLAUDE.md.
+- `ovcd_pipeline(captions=True, captioner_checkpoint=...)` alinea los cubos
+  originales a `CAPTIONER_WAVELENGTHS` y añade `caption_t1`/`caption_t2`/
+  `caption_pixel` a cada detección (patch 11×11 en el centroide de la máscara).
+- CLI: `--captions` + `--captioner-ckpt <pth>`. Sin checkpoint corre igual con
+  warning (texto sin sentido, solo plomería).
+- Verificado: test de integración con máscaras sintéticas + corrida end-to-end.
+- La visualización aún NO muestra los captions (van en el dict y en stdout);
+  mostrar caption corto en el panel 4 queda con Fase 3.
 
 ### Fase 3 — Caption de CAMBIO bitemporal
 - Componer `caption_t1` + `caption_t2` en una frase de cambio

@@ -19,8 +19,11 @@ lenguaje natural de las regiones de cambio. Plan en `docs/hypercap-plan.md`.
   Re-exporta todas las funciones públicas (`from pipeline import ...` es la API estable).
 - `stages/<etapa>/` — una carpeta por etapa, cada una con su `CLAUDE.md`:
   `loading`, `alignment`, `features` (HyperSIGMA), `change_detection`, `rgb`,
-  `segmentation` (SAM), `labeling` (CLIP), `visualization`.
-- `HyperSIGMA/` — repo de investigación vendoreado. NO refactorizar (ver su CLAUDE.md).
+  `segmentation` (SAM), `labeling` (CLIP), `captioning` (HyperCap, opcional),
+  `visualization`.
+- `experiments/` — scripts sueltos: smoke tests y entrenamiento Colab del captioner.
+- `HyperSIGMA/`, `HyperCap/` — repos de investigación vendoreados. NO refactorizar
+  (ver sus CLAUDE.md).
 - `hyperglobal/` — datos de prueba y utilidades (ver su CLAUDE.md).
 - `weights/` y `*.pth` — checkpoints grandes, fuera de git.
 - `hyper_sam.md`, `leftover.md`, `next_steps.md` — docs históricos. OJO: `leftover.md`

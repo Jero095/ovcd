@@ -47,10 +47,12 @@ from stages.change_detection import change_map_to_prompts, compute_change_map
 from stages.rgb import hsi_to_rgb
 from stages.segmentation import run_sam
 from stages.labeling import DEFAULT_VOCABULARY, classify_changes_clip
+from stages.captioning import CAPTIONER_WAVELENGTHS, caption_regions, load_captioner
 from stages.visualization import visualize_ovcd
 
 __all__ = [
     "HYPERION_WAVELENGTHS",
+    "CAPTIONER_WAVELENGTHS",
     "DEFAULT_VOCABULARY",
     "load_hsi_pair",
     "align_spectral",
@@ -61,6 +63,8 @@ __all__ = [
     "change_map_to_prompts",
     "run_sam",
     "classify_changes_clip",
+    "load_captioner",
+    "caption_regions",
     "visualize_ovcd",
     "ovcd_pipeline",
 ]
@@ -85,6 +89,8 @@ def ovcd_pipeline(
     hypersigma_variant: str = "spat_base",
     device: str = "cuda",
     save_viz: str = "resultado_ovcd.png",
+    captions: bool = False,
+    captioner_checkpoint: Optional[str] = None,
 ) -> dict:
     """
     Pipeline OVCD completo: carga → alineación → HyperSIGMA → cambio → SAM → CLIP.
@@ -104,6 +110,10 @@ def ovcd_pipeline(
     hypersigma_variant           : "spat_base" | "spat_large" | "spec_base" | "spec_large"
     device                       : "cuda" o "cpu"
     save_viz                     : ruta de la imagen de visualización de salida
+    captions                     : si True, genera captions HyperCap por región
+                                   (caption_t1/caption_t2 en cada detección)
+    captioner_checkpoint         : .pth del captioner entrenado (None → sin
+                                   entrenar, solo para pruebas de plomería)
 
     Returns
     -------
@@ -175,6 +185,19 @@ def ovcd_pipeline(
     print("[8/8] Clasificando cambios con CLIP...")
     detections = classify_changes_clip(rgb_t1, rgb_t2, sam_results, vocabulary)
 
+    # 8b (opcional). Captions HyperCap por región
+    if captions:
+        print("[+]   Generando captions HyperCap por región...")
+        t1_cap = align_spectral(t1, wl1, CAPTIONER_WAVELENGTHS)
+        t2_cap = align_spectral(t2, wl2, CAPTIONER_WAVELENGTHS)
+        cap_model, cap_processor = load_captioner(
+            checkpoint=captioner_checkpoint,
+            bands=int(CAPTIONER_WAVELENGTHS.shape[0]),
+            device=device,
+        )
+        detections = caption_regions(t1_cap, t2_cap, detections,
+                                     cap_model, cap_processor)
+
     # Visualización
     visualize_ovcd(rgb_t1, rgb_t2, change_map, detections, save_viz)
 
@@ -182,6 +205,9 @@ def ovcd_pipeline(
         score = det["score"]
         ctype = det.get("change_type", "?")
         print(f"      Región {det['region_id']:>3}: score SAM={score:.3f}  tipo={ctype}")
+        if captions:
+            print(f"            T1: {det.get('caption_t1', '')}")
+            print(f"            T2: {det.get('caption_t2', '')}")
 
     return {
         "change_map": change_map,
@@ -198,8 +224,9 @@ def ovcd_pipeline(
 if __name__ == "__main__":
     import argparse
 
+    # Solo ASCII aquí: la consola Windows (cp1252) no imprime '→' en --help
     parser = argparse.ArgumentParser(
-        description="OVCD Pipeline: HyperSIGMA → SAM → CLIP"
+        description="OVCD Pipeline: HyperSIGMA -> SAM -> CLIP (+ captions HyperCap)"
     )
     parser.add_argument("t1",  help="Ruta imagen HSI T1")
     parser.add_argument("t2",  help="Ruta imagen HSI T2")
@@ -216,6 +243,11 @@ if __name__ == "__main__":
                         help="Ruta de la imagen de salida")
     parser.add_argument("--variant", default="spat_base",
                         choices=["spat_base", "spat_large", "spec_base", "spec_large"])
+    parser.add_argument("--captions", action="store_true",
+                        help="Generar captions HyperCap por región de cambio")
+    parser.add_argument("--captioner-ckpt", default=None,
+                        help="Checkpoint del captioner entrenado (.pth). Sin él "
+                             "los captions son texto sin sentido (solo plomería).")
     args = parser.parse_args()
 
     results = ovcd_pipeline(
@@ -229,5 +261,7 @@ if __name__ == "__main__":
         device=args.device,
         save_viz=args.out,
         hypersigma_variant=args.variant,
+        captions=args.captions,
+        captioner_checkpoint=args.captioner_ckpt,
     )
     print(f"\nRegiones detectadas: {results['n_regions']}")
