@@ -9,6 +9,6 @@ Carga pares HSI bitemporales → `(H, W, C) float32` + wavelengths `(C,)` en nm.
   `wavelength|wl|lambda` (con variantes de mayúsculas).
 - Sin metadatos de wavelength → fallback uniforme 400–2500 nm con warning. El par
   de prueba barbara cae en este caso.
-- **Punto de integración futuro de HyperCap**: la cámara exporta ENVI con `.hdr`,
-  así que la entrada nueva se conecta aquí. Pendiente: co-registro T1/T2 y rango
-  VNIR (~400–1000 nm) frente a la referencia Hyperion (ver stages/alignment).
+- Los 4 escenarios del dataset HyperCap (Indian Pines, Houston13, KSC, Botswana)
+  vienen en `.mat` → este loader ya los soporta. Indian Pines ya está local en
+  `HyperSIGMA/ImageClassification/data/Indian_pines_corrected.mat`.

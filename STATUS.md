@@ -15,16 +15,21 @@
    `stages/labeling/clip_stage.py` (Fase 2 de `next_steps.md`).
 3. **Evaluación cuantitativa** — dataset GETNET (EO-1 Hyperion con ground truth),
    script `evaluate.py` con F1/Precision/Recall (Fase 3 de `next_steps.md`).
-4. **Integración HyperCap** — pendiente confirmar cuál HyperCap es (¿software de
-   captura HinaLea/TruTag?). Tocará `stages/loading` (entrada ENVI desde la cámara),
-   más co-registro T1/T2 y manejo del rango VNIR vs referencia Hyperion.
+4. **Integración HyperCap** — CONFIRMADO: HyperCap es el dataset/benchmark de
+   captioning hiperespectral (arXiv 2505.12217, github.com/arya-domain/HyperCap).
+   Objetivo: generar captions en lenguaje natural por región de cambio usando el
+   cubo HSI real (no el RGB). Plan completo en `docs/hypercap-plan.md`.
+   Será una etapa nueva `stages/captioning/`, complementaria a `stages/labeling`.
 
 ## Problemas conocidos / deuda
 - ~~Pipeline no determinista~~ **RESUELTO 2026-06-11**: el checkpoint de HyperSIGMA
   no trae los pesos `sampling_offsets` ni `patch_embed` (se inicializan al azar);
   ahora `load_hypersigma` fija `torch.manual_seed(seed)` (default `seed=0`) antes de
   construir el modelo → dos cargas producen features bit-idénticos (verificado,
-  max diff 0.0). `seed=None` recupera el comportamiento antiguo.
+  max diff 0.0). Verificado también a nivel de pipeline COMPLETO: dos corridas
+  end-to-end sobre barbara dieron resultados idénticos (mismo change_map, mismas
+  117 regiones, mismas máscaras y etiquetas). `seed=None` recupera el
+  comportamiento antiguo.
 - El CLI ofrece `--variant spec_base|spec_large` pero `_SPAT_VARIANT_CFG`
   (stages/features) solo define `spat_*` → esas opciones fallarían con ValueError.
 - SAM y CLIP se cargan desde disco en cada llamada (`run_sam`,

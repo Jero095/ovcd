@@ -5,8 +5,9 @@ Pipeline zero-shot que, dado un par de imágenes hiperespectrales (T1, T2) de la
 escena, detecta qué cambió y lo etiqueta con vocabulario libre, sin clases predefinidas
 ni entrenamiento. Cadena: HyperSIGMA (embeddings) → mapa de cambio coseno → SAM
 (máscaras precisas) → CLIP (etiquetas open-vocabulary).
-**Meta siguiente:** integrar HyperCap (captura de cámara hiperespectral) como fuente
-de entrada del pipeline.
+**Meta siguiente:** integrar HyperCap (dataset/benchmark de captioning hiperespectral,
+arXiv 2505.12217, repo github.com/arya-domain/HyperCap) para generar descripciones en
+lenguaje natural de las regiones de cambio. Plan en `docs/hypercap-plan.md`.
 
 ## Antes de trabajar
 1. Lee `STATUS.md` — estado actual y próximos pasos. Actualízalo al cerrar la sesión.

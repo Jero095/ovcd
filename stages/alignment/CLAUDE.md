@@ -9,5 +9,7 @@ Reinterpolación espectral al espacio de referencia + normalización.
 - Después de interpolar aplica min-max POR BANDA → salida en [0, 1].
 - Invariante: `in_chans` de HyperSIGMA (stages/features) debe ser igual a
   `len(target_wl)`. Si cambias el espacio de referencia, cambia ambos.
-- Para HyperCap (cámara VNIR) probablemente convenga un `target_wl` restringido a
-  VNIR en vez de Hyperion completo, para no llenar de ceros el SWIR.
+- Para la etapa de captioning HyperCap (futura): cada escena del dataset usa un
+  sensor distinto (IP/KSC: AVIRIS 224b, Houston13: CASI 144b, Botswana: Hyperion).
+  El captioner esperará un espacio espectral concreto → alinear con esta etapa
+  usando ese espacio como `target_wl`.
