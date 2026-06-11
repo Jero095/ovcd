@@ -20,12 +20,11 @@
    más co-registro T1/T2 y manejo del rango VNIR vs referencia Hyperion.
 
 ## Problemas conocidos / deuda
-- **El pipeline NO es determinista**: el checkpoint de HyperSIGMA no contiene los
-  pesos `blocks.*.attn.sampling_offsets.*` (ver missing_keys al cargar), así que se
-  inicializan al azar en CADA ejecución → embeddings distintos → mapa de cambio y
-  número de regiones distintos por corrida (78 vs 47 en el mismo par barbara).
-  Existía antes del refactor. Mitigación posible: `torch.manual_seed(...)` fijo al
-  inicio de `load_hypersigma` (stages/features) para resultados reproducibles.
+- ~~Pipeline no determinista~~ **RESUELTO 2026-06-11**: el checkpoint de HyperSIGMA
+  no trae los pesos `sampling_offsets` ni `patch_embed` (se inicializan al azar);
+  ahora `load_hypersigma` fija `torch.manual_seed(seed)` (default `seed=0`) antes de
+  construir el modelo → dos cargas producen features bit-idénticos (verificado,
+  max diff 0.0). `seed=None` recupera el comportamiento antiguo.
 - El CLI ofrece `--variant spec_base|spec_large` pero `_SPAT_VARIANT_CFG`
   (stages/features) solo define `spat_*` → esas opciones fallarían con ValueError.
 - SAM y CLIP se cargan desde disco en cada llamada (`run_sam`,

@@ -38,6 +38,7 @@ def load_hypersigma(
     in_chans: int = 242,
     device: str = "cuda",
     hypersigma_root: str = "HyperSIGMA",
+    seed: int | None = 0,
 ) -> torch.nn.Module:
     """
     Carga el encoder SpatViT de HyperSIGMA desde un checkpoint local.
@@ -49,12 +50,19 @@ def load_hypersigma(
     in_chans        : número de bandas espectrales de entrada (default 242 = Hyperion)
     device          : "cuda" o "cpu"
     hypersigma_root : ruta a la carpeta raíz del repositorio HyperSIGMA clonado
+    seed            : semilla para la inicialización aleatoria. El checkpoint NO
+                      contiene los pesos `sampling_offsets` (SSA), que se inicializan
+                      al azar — sin semilla fija cada ejecución produce embeddings
+                      distintos. None = no fijar semilla (comportamiento antiguo).
 
     Returns
     -------
     model : SpatViT en eval mode con pesos cargados
     """
     _ensure_hypersigma_on_path(hypersigma_root)
+
+    if seed is not None:
+        torch.manual_seed(seed)
 
     try:
         from SpatViT_cls import SpatViT  # type: ignore

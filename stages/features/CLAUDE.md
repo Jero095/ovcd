@@ -12,6 +12,11 @@ Extrae feature maps densos `(H/16, W/16, embed_dim)` con el encoder SpatViT.
   `init_weights()` interpola `pos_embed` y descarta el `patch_embed` RGB.
 - Gotcha PyTorch ≥ 2.6: el checkpoint contiene `argparse.Namespace` → necesita
   `weights_only=False` (parcheado en `SpatViT_cls.py:570`, NO revertir).
+- Determinismo: el checkpoint NO trae los pesos `blocks.*.attn.sampling_offsets.*`
+  ni `patch_embed.proj.*` (se inicializan al azar al construir el modelo).
+  `load_hypersigma(seed=0)` fija `torch.manual_seed` antes de construir → resultados
+  reproducibles entre ejecuciones. NO quitar el seed: la evaluación cuantitativa
+  (Fase 3) depende de esto.
 - Imágenes grandes: tiling de 256 px con solape de 32 y promedio con peso gaussiano
   (`_tiled_forward`) para evitar artefactos de borde y OOM.
 - BUG latente: `_SPAT_VARIANT_CFG` solo define `spat_base|spat_large|spat_huge`,
