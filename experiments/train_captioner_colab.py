@@ -76,6 +76,9 @@ class HyperCapCaptionDataset(Dataset):
         padded = np.pad(data, ((0, 0), (pad, pad), (pad, pad)), mode="constant")
 
         captions["Class name"] = captions["Class name"].str.strip().str.lower()
+        # Celdas vacías en Description se leen como NaN (float) y rompen el
+        # tokenizer, que exige str → forzar a string y limpiar.
+        captions["Description"] = captions["Description"].fillna("").astype(str)
         pool = {name: g["Description"].tolist()
                 for name, g in captions.groupby("Class name")}
         idx = {name: 0 for name in pool}
@@ -162,7 +165,7 @@ def main():
             out.loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            total += float(out.loss)
+            total += out.loss.item()
         print(f"epoch {epoch + 1}/{args.epochs}  loss={total / len(loader):.4f}")
         if (epoch + 1) % 10 == 0 or epoch + 1 == args.epochs:
             torch.save(model.state_dict(), out_path)
