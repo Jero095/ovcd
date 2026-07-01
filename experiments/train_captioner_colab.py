@@ -116,7 +116,12 @@ class VisionModel(nn.Module):
         self.fc = nn.Linear(64, 768)
 
     def forward(self, pixel_values, **kwargs):
-        return [self.fc(self.base(pixel_values)).unsqueeze(1)]
+        # BLIP de transformers accede a vision_outputs.last_hidden_state.
+        # BaseModelOutputWithPooling soporta atributo E indexado [0], así que
+        # funciona con versiones nuevas y viejas de transformers.
+        from transformers.modeling_outputs import BaseModelOutputWithPooling
+        x = self.fc(self.base(pixel_values)).unsqueeze(1)  # (B, 1, 768)
+        return BaseModelOutputWithPooling(last_hidden_state=x)
 
 
 def main():

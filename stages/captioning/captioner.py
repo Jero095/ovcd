@@ -39,7 +39,9 @@ class _VisionModel(nn.Module):
 
     El conv stem de 3D-ConvSST produce 64 canales → embed_dim=64 (n_heads=8
     porque debe dividir a 64) + adapter Linear(64→768) hacia el decoder de BLIP.
-    Devuelve [x] (lista) porque BLIP indexa vision_outputs[0].
+    Devuelve un BaseModelOutputWithPooling: BLIP moderno accede a
+    vision_outputs.last_hidden_state (por atributo); el ModelOutput también
+    soporta indexado [0], así que sirve para versiones nuevas y viejas.
     """
 
     def __init__(self, bands: int):
@@ -49,8 +51,9 @@ class _VisionModel(nn.Module):
         self.fc = nn.Linear(64, 768)
 
     def forward(self, pixel_values, **kwargs):
-        x = self.fc(self.base(pixel_values))
-        return [x.unsqueeze(1)]  # (B, 1, 768)
+        from transformers.modeling_outputs import BaseModelOutputWithPooling
+        x = self.fc(self.base(pixel_values)).unsqueeze(1)  # (B, 1, 768)
+        return BaseModelOutputWithPooling(last_hidden_state=x)
 
 
 def load_captioner(
