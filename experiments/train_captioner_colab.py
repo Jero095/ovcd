@@ -42,6 +42,11 @@ sys.path.insert(0, "HyperCap")
 
 PATCH_SIZE = 11
 BLIP_NAME = "Salesforce/blip-image-captioning-base"
+# Los captions de HyperCap son frases cortas (~22 tokens max medido en Indian
+# Pines); el tokenizer de BLIP tiene model_max_length=512 y con
+# padding="max_length" sin este tope rellenaba CADA muestra a 512 tokens,
+# disparando el costo del decoder de texto ~25x sin necesidad.
+TEXT_MAX_LENGTH = 32
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +106,7 @@ class HyperCapCaptionDataset(Dataset):
 
     def __getitem__(self, k):
         enc = self.processor(text=self.texts[k], padding="max_length",
+                             max_length=TEXT_MAX_LENGTH, truncation=True,
                              return_tensors="pt")
         enc = {key: v.squeeze() for key, v in enc.items()}
         enc["pixel_values"] = torch.from_numpy(
