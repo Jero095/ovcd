@@ -1,0 +1,414 @@
+\documentclass[12pt,onecolumn]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{caption}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{adjustbox}
+\usepackage{multirow}
+\usepackage{titlesec}
+\usepackage{colortbl}
+\usepackage{hhline}
+
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+\renewcommand{\thetable}{\arabic{table}}
+
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+
+\titleformat{\subsection}
+  {\bfseries\normalsize}  % formato del texto: negrita y tamaño normal
+  {\thesubsection}{1em}{} % numeración y espaciado
+  \titleformat{\subsubsection}
+  {\bfseries\normalsize}
+  {\thesubsubsection}{1em}{}
+
+\definecolor{morado1}{HTML}{7B6BAF} % Morado medio
+\definecolor{azul2}{HTML}{A4C2F4} % Azul cielo
+\definecolor{verde1}{HTML}{76A5AF} % Verde-azulado medio
+\definecolor{lima1}{HTML}{B6D7A8} % Verde amarillento pastel
+\definecolor{cabecera}{HTML}{D9EAD3} % Encabezado de fase
+
+\geometry{a4paper, margin=1in}
+\setstretch{1.7}
+
+\captionsetup[table]{skip=10pt}
+
+\begin{document}
+
+% ================= PORTADA =================
+\begin{titlepage}
+\begin{center}
+
+
+\includegraphics[width=4cm]{logo_uis}\\[0.8cm]
+{ UNIVERSIDAD INDUSTRIAL DE SANTANDER}\\
+{FACULTAD DE INGENIERÍAS FISICOMECÁNICAS}\\
+{ ESCUELA DE INGENIERÍA DE SISTEMAS E INFORMÁTICA}\\[1cm]
+
+{PLAN DE TRABAJO DE GRADO}\\[0.8cm]
+
+{Open Change Detection for Bitemporal Hyperspectral Images}\\[1cm]
+
+{ Trabajo de investigación}\\[0.5cm]
+
+\textbf{Autor:}\\
+Juan Jeronimo Jauregui Prince - 2220068\\[0.8cm]
+
+\textbf{Directora:}\\
+PhD Laura Viviana Galvis Carreño\\
+Escuela de Ingeniería de Sistemas e Informática UIS\\[0.8cm]
+\textbf{Co-Director:}\\
+
+
+{Bucaramanga, 10 de Abril de 2026}\\[0.8cm]
+
+%\rule{8cm}{0.4pt} \\%[2mm]
+%\textbf{VoBo. Laura Viviana Galvis Carreño} \\
+%Directora de Trabajo de Investigación
+%\vfill
+\end{center}
+\end{titlepage}
+
+% ================= TABLA DE CONTENIDO =================
+\setcounter{tocdepth}{3}
+\tableofcontents
+\newpage
+
+% ================= CONTENIDO PRINCIPAL =================
+\section{\textbf{Introducción}}
+
+Una imagen hiperespectral, conocida por sus siglas en inglés HSI, es una representación tridimensional de una escena, conocida como cubo de datos, en la que cada píxel no almacena únicamente tres valores de color, rojo, verde y azul, como una imagen convencional, sino cientos de valores de reflectancia medidos en bandas espectrales estrechas y contiguas del espectro electromagnético. De esta manera, cada píxel contiene una \textit{firma espectral} completa, es decir, una curva que describe cómo el material presente en ese punto refleja o absorbe la energía a lo largo de un amplio rango de longitudes de onda, que típicamente abarca desde el visible hasta el infrarrojo de onda corta \cite{bhargava2024hyperspectral}.
+
+Desde el punto de vista de la adquisición, estas imágenes se capturan mediante sensores hiperespectrales embarcados en plataformas satelitales, aéreas o de laboratorio, que descomponen la luz incidente en sus componentes espectrales a través de elementos dispersores como prismas o redes de difracción. Los esquemas más comunes de captura son el barrido lineal, denominado \textit{pushbroom} y \textit{whiskbroom}, en el que el sensor registra franjas de la escena de forma secuencial a medida que la plataforma avanza, y los sistemas de plano focal que capturan bandas espectrales sucesivas de una misma escena. El resultado es el cubo hiperespectral, con dos dimensiones espaciales y una dimensión espectral \cite{bhargava2024hyperspectral}.
+
+La principal ventaja de una imagen hiperespectral frente a una imagen RGB o multiespectral convencional radica en su resolución espectral. Mientras que una imagen RGB resume toda la información en tres bandas anchas, insuficientes para distinguir materiales con colores aparentes similares, la imagen hiperespectral proporciona una firma espectral detallada que actúa como una huella dactilar del material, permitiendo diferenciar coberturas y sustancias que resultan indistinguibles al ojo humano o a una cámara ordinaria. Esta riqueza espectral habilita la identificación y clasificación de materiales con un nivel de detalle imposible de alcanzar con la información puramente cromática \cite{bhargava2024hyperspectral}. Gracias a ello, la imagen hiperespectral se aplica hoy en agricultura de precisión, monitoreo ambiental, geología y minería, seguridad y defensa, control de calidad de alimentos y diagnóstico médico, entre muchos otros campos \cite{bhargava2024hyperspectral}.
+
+Dentro de la teledetección, una de las tareas de mayor interés es la \textit{detección de cambios}, conocida en inglés como \textit{change detection}, que consiste en comparar dos o más imágenes de una misma escena adquiridas en instantes de tiempo distintos, en un análisis bitemporal o multitemporal, con el fin de identificar qué zonas se han modificado. Sus aplicaciones incluyen el seguimiento de la deforestación, la expansión urbana, los desastres naturales y los cambios en el uso del suelo. En este contexto, la Detección de Cambios de Vocabulario Abierto, denominada en inglés \textit{Open Vocabulary Change Detection} u OVCD, busca no solo localizar dónde ocurrió un cambio, sino también describirlo y etiquetarlo con lenguaje natural libre, sin restringirse a un conjunto cerrado de clases definidas de antemano ni requerir un entrenamiento supervisado específico para cada tipo de cambio.
+
+El propósito del enfoque de vocabulario abierto es superar la principal limitación de los métodos tradicionales de detección de cambios, los cuales quedan restringidos a las categorías presentes en sus datos de entrenamiento, lo que compromete su capacidad de generalización a escenarios reales \cite{zhu2025semanticcd}. El estado del arte reciente en OVCD sobre teledetección se apoya en modelos de visión y lenguaje a gran escala para dotar de conocimiento semántico a la tarea: propuestas como \textit{Semantic-CD} incorporan el conocimiento implícito de modelos preentrenados de visión-lenguaje para mejorar la generalización entre categorías en la detección semántica de cambios \cite{zhu2025semanticcd}. Esta línea se enmarca en el auge más amplio de la segmentación semántica de vocabulario abierto, impulsada por modelos como CLIP y su capacidad de clasificación \textit{zero-shot} \cite{radford2021clip}.
+
+El presente trabajo articula una cadena de modelos fundacionales, cada uno preentrenado a gran escala y reutilizado sin necesidad de reentrenar un clasificador de cambios. En primer lugar, HyperSIGMA, un modelo fundacional de comprensión hiperespectral basado en \textit{Vision Transformers}, se emplea como extractor de características para obtener representaciones profundas de cada imagen del par bitemporal \cite{wang2024hypersigma}. A partir de estas representaciones se calcula un mapa de cambio mediante similitud coseno. Posteriormente, el modelo Segment Anything, conocido como SAM, un modelo fundacional de segmentación \textit{promptable} capaz de transferirse a nuevas distribuciones de imágenes de forma \textit{zero-shot}, refina las regiones de cambio en máscaras precisas a nivel de píxel \cite{kirillov2023sam}. Finalmente, CLIP, sigla de \textit{Contrastive Language-Image Pre-training}, aporta la capa de vocabulario abierto: al haber aprendido un espacio de representación compartido entre imagen y texto mediante aprendizaje contrastivo, permite etiquetar cada región de cambio contra un vocabulario textual libre por similitud semántica, sin clases predefinidas \cite{radford2021clip}. De forma complementaria, la generación de descripciones en lenguaje natural de las regiones se aborda con modelos de visión-lenguaje de tipo \textit{captioning} como BLIP \cite{li2022blip}, aprovechando conjuntos de datos específicos para el dominio hiperespectral como HyperCap \cite{das2025hypercap}.
+
+El eje metodológico común a esta cadena es el paradigma \textit{zero-shot}: la capacidad de los modelos fundacionales de resolver tareas sobre categorías no vistas durante su entrenamiento, transfiriendo el conocimiento adquirido en grandes corpus a un dominio nuevo sin ajuste supervisado adicional. Este paradigma es precisamente lo que hace viable la detección de cambios de vocabulario abierto. No obstante, si bien la detección de cambios de vocabulario abierto se ha desarrollado sobre imágenes ópticas RGB y multiespectrales de teledetección \cite{zhu2025semanticcd}, y la clasificación \textit{zero-shot} de imágenes hiperespectrales con CLIP ha comenzado a explorarse recientemente \cite{pang2025special}, hasta la fecha no se ha abordado la detección de cambios de vocabulario abierto sobre imágenes hiperespectrales bitemporales, lo que constituye la brecha que motiva este trabajo.
+
+Con base en lo anterior, esta investigación se centra en el diseño e implementación de una cadena de procesamiento, o \textit{pipeline}, \textit{zero-shot} que, a partir de un par de imágenes hiperespectrales de una misma escena tomadas en tiempos distintos, detecte las regiones de cambio y las describa con vocabulario libre, integrando modelos fundacionales de comprensión hiperespectral, segmentación y visión-lenguaje. El propósito es aprovechar la riqueza espectral de las imágenes hiperespectrales, hasta ahora poco explotada en este tipo de tareas, para lograr una caracterización semántica de los cambios más rica y generalizable que la que ofrecen los métodos supervisados de clases cerradas.
+
+\newpage
+% ================= PLANTEAMIENTO =================
+\section{\textbf{Planteamiento y justificación del problema}}
+
+
+En los últimos años, los modelos fundacionales de visión por computador han transformado las tareas de segmentación y de comprensión semántica de imágenes. Modelos de segmentación \textit{promptable} como Segment Anything, conocido como SAM, permiten obtener máscaras precisas de objetos sin haber sido entrenados para categorías específicas \cite{kirillov2023sam}, mientras que los modelos de visión y lenguaje como CLIP habilitan la clasificación de vocabulario abierto al alinear imágenes y texto en un mismo espacio semántico \cite{radford2021clip}. Sobre esta base, la detección de cambios de vocabulario abierto, denominada en inglés \textit{Open Vocabulary Change Detection}, ha comenzado a consolidarse en teledetección: métodos recientes como \textit{Semantic-CD} identifican y describen los cambios entre imágenes de una misma escena sin limitarse a un conjunto cerrado de clases definidas de antemano \cite{zhu2025semanticcd}. No obstante, todos estos desarrollos operan sobre imágenes ópticas RGB o multiespectrales; para imágenes hiperespectrales, que registran cientos de bandas espectrales por píxel, este enfoque todavía no existe.
+
+Llevar la detección de cambios de vocabulario abierto al dominio hiperespectral abre un abanico de aplicaciones de alto impacto. La firma espectral de cada píxel actúa como una huella dactilar del material, de modo que un sistema capaz de detectar y describir cambios sobre este tipo de imágenes podría distinguir transformaciones imperceptibles para una cámara convencional. En el ámbito civil esto resulta valioso para el monitoreo de la deforestación, la minería ilegal, la contaminación de cuerpos de agua, el crecimiento urbano, la salud de los cultivos y la respuesta ante desastres naturales, escenarios en los que la naturaleza del cambio importa tanto como su ubicación. En el ámbito militar y de seguridad, la riqueza espectral permite revelar materiales y actividades que el camuflaje visual oculta, como movimientos de vehículos, alteraciones del terreno o presencia de materiales artificiales, información difícil de obtener con sensores RGB tradicionales.
+
+Para abordar esta brecha, el presente trabajo integra un conjunto de modelos fundacionales ya existentes en una única cadena de procesamiento. En esencia se emplea el modelo HyperSIGMA para extraer las características espectrales y espaciales de las imágenes \cite{wang2024hypersigma}, una comparación por similitud coseno para localizar los cambios, el modelo SAM para delimitar con precisión las regiones modificadas \cite{kirillov2023sam} y el modelo CLIP para asignarles una etiqueta de vocabulario abierto \cite{radford2021clip}, con la posibilidad adicional de generar descripciones en lenguaje natural mediante modelos de \textit{captioning} hiperespectral \cite{li2022blip, das2025hypercap}.
+
+Con base en lo anterior, la investigación se orienta por la siguiente pregunta: ¿cómo se puede implementar un sistema computacional para realizar detección de cambios de vocabulario abierto en imágenes hiperespectrales bitemporales? Responder a esta pregunta implica diseñar una solución que, sin entrenamiento supervisado específico para cada tipo de cambio, sea capaz de localizar, segmentar y describir con lenguaje libre las diferencias entre dos adquisiciones hiperespectrales de una misma escena.
+
+El sistema propuesto se estructura como una cadena de fases secuenciales. La primera fase carga el par de imágenes hiperespectrales de la misma escena y las alinea a un espacio espectral común. La segunda fase extrae representaciones profundas de cada imagen con el modelo fundacional HyperSIGMA. La tercera fase calcula un mapa de cambio comparando ambas representaciones mediante similitud coseno y lo binariza para aislar las regiones modificadas. La cuarta fase convierte esas regiones en indicaciones espaciales y las entrega al modelo SAM, que produce máscaras precisas a nivel de píxel. La quinta fase etiqueta cada máscara contra un vocabulario textual libre usando el modelo CLIP y, de forma opcional, genera una descripción en lenguaje natural de cada región con un modelo de \textit{captioning} apoyado en el conjunto de datos HyperCap. Como resultado, el sistema entrega para cada par de imágenes un conjunto de regiones de cambio, cada una acompañada de su máscara, su etiqueta semántica y, cuando corresponde, una descripción textual del cambio detectado.
+
+Este trabajo se desarrolla en el marco de las líneas de investigación de la Escuela de Ingeniería de Sistemas e Informática de la Universidad Industrial de Santander, en las áreas de visión por computador, teledetección e inteligencia artificial. \textbf{[Pendiente por completar: nombrar el grupo de investigación o la línea del profesor o directora con la que se articula el proyecto, describir brevemente sus objetivos y explicar cómo este trabajo aporta a dicha línea.]}
+
+\newpage
+% ================= OBJETIVOS =================
+\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+\section{\textbf{Objetivos}}
+
+    \subsection{Objetivo general}
+    Desarrollar un sistema computacional zero-shot para la detección de cambios de vocabulario abierto en imágenes hiperespectrales bitemporales, que localice, segmente y describa con lenguaje libre las diferencias entre dos adquisiciones de una misma escena, mediante la integración de modelos fundacionales de comprensión hiperespectral, segmentación y visión-lenguaje.
+    
+    \subsection{Objetivos específicos}
+    \renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+    
+    \subsubsection{\normalfont Implementar un módulo de carga y preprocesamiento que reciba pares de imágenes hiperespectrales bitemporales de una misma escena y las alinee a un espacio espectral de referencia común, garantizando la homogeneidad de las bandas antes del análisis.}
+    
+    \subsubsection{\normalfont Extraer representaciones profundas de cada imagen mediante el modelo fundacional HyperSIGMA y calcular un mapa de cambio a partir de la similitud coseno entre ambas representaciones, con el fin de localizar y delimitar las regiones donde se produjeron cambios.
+    }
+
+    \subsubsection{\normalfont Integrar el modelo Segment Anything para convertir las regiones de cambio detectadas en máscaras precisas a nivel de píxel, empleando indicaciones espaciales derivadas del mapa de cambio.
+    }
+    
+    
+    \subsubsection{\normalfont Incorporar el modelo CLIP para asignar a cada región segmentada una etiqueta semántica de vocabulario abierto por similitud entre imagen y texto, sin depender de un conjunto cerrado de clases predefinidas.
+    }
+    
+    \subsubsection{\normalfont Generar descripciones en lenguaje natural de cada región de cambio mediante un modelo de captioning hiperespectral apoyado en el conjunto de datos HyperCap, complementando la etiqueta de vocabulario abierto con una caracterización semántica más rica.}
+
+    \subsubsection{\normalfont Integrar las etapas anteriores en una única cadena de procesamiento automatizada y producir una visualización que presente las regiones de cambio junto con su máscara, su etiqueta y su descripción.}
+
+    \subsubsection{\normalfont Validar cuantitativamente el sistema sobre un conjunto de datos hiperespectral bitemporal con verdad de terreno, empleando métricas como precisión, exhaustividad y puntaje F1 para evaluar el desempeño de la detección de cambios.  
+    } 
+\vspace{1.5em} 
+
+\newpage
+% ================= MARCO DE REFERENCIA =================
+\addtocontents{toc}{\protect\setcounter{tocdepth}{3}}
+\section{Marco de referencia}
+\subsection{Marco teórico}
+\subsubsection{Teoría Fundamental del Moteado Láser (Speckle)}
+El fenómeno de \textit{speckle} surge de la interferencia aleatoria de ondas de luz coherente tras interactuar con un medio difusor. Tradicionalmente, un patrón de moteado completamente desarrollado se describe mediante una caminata aleatoria en el plano complejo, resultando en una estadística de irradiancia con distribución exponencial negativa y un contraste unitario \cite{goodman2007speckle}. Sin embargo, en la caracterización de medios aleatorios discretos (DRM), la estadística del \textit{speckle} permite extraer información sobre propiedades estructurales sub-resolución, tales como el tamaño y la organización de las partículas dispersoras \cite{Almasian2017}.
+
+Para una caracterización exhaustiva que defina las características deseadas en el sistema, se emplean tres descriptores críticos \cite{Ong2012}:
+\begin{itemize}
+    \item \textbf{Severidad:} Representa la magnitud de la variación de intensidad, cuantificable mediante el contraste o el \textit{Total Spectral Power} (TSP).
+    \item \textbf{Granularidad:} Define la distribución del tamaño de grano del moteado, inversamente proporcional a la frecuencia espacial radial en la Densidad Espectral de Potencia (PSD).
+    \item \textbf{Anisotropía:} Indica la distribución inhomogénea del moteado respecto a la dirección, detectable mediante el análisis polar de la PSD.
+\end{itemize}
+
+\subsubsection{Teoría de Haces: Haces Estructurados y Mathieu-Gauss}
+Los haces estructurados son soluciones de la ecuación de onda que presentan distribuciones de fase y amplitud diseñadas de manera específica. Los Haces de Mathieu-Gauss (MG) destacan por ser soluciones de la ecuación de Helmholtz en coordenadas cilíndricas elípticas, caracterizándose por ser haces no difractantes que mantienen su forma durante la propagación \cite{hernandez2010experimental}. Estos haces se definen por parámetros fundamentales como el orden ($m$), la excentricidad y el parámetro de elipticidad ($q$).
+
+En regímenes de coherencia parcial, los haces MG muestran una notable resiliencia; aunque su perfil de intensidad se deteriore con la propagación, sus características estructurales permanecen codificadas y pueden recuperarse a través de la función de correlación cruzada (CCF) \cite{akbarpour2025partially}.
+
+\subsubsection{Haces con Momento Angular Orbital (OAM)}
+La superposición de modos de Mathieu (pares e impares) con un desfase de $\pi/2$ da lugar a haces de Mathieu helicoidales. Estos haces poseen una fase en espiral que les confiere Momento Angular Orbital (OAM), transportando una carga topológica definida \cite{hernandez2010experimental}. El control del OAM en estos haces es crítico para aplicaciones que requieren manipulación de partículas o transmisión de información robusta en medios no homogéneos, ya que la estructura del núcleo del vórtice elíptico se mantiene incluso ante reducciones en la coherencia espacial del sistema \cite{akbarpour2025partially}.
+
+\subsubsection{Técnicas de Análisis y Dinámica Temporal}
+Para el estudio de sistemas dinámicos, se emplean técnicas estadísticas avanzadas:
+\begin{itemize}
+    \item \textbf{Dinámica Temporal y Correlación:} Existe una relación directa entre el tamaño del grano y el tiempo de decorrelación ($\tau_c$): granos espaciales mayores muestran una decorrelación más lenta \cite{Rajan2008}. Modelos recientes demuestran que la correlación entre cuadros adyacentes es fundamental para evitar errores de interpretación en muestras con dinámicas lentas \cite{JuarezRamirez2025}.
+\end{itemize}
+
+\subsubsection{Métodos Computacionales y Tratamiento de Imágenes}
+Para el procesamiento digital de señales ópticas mediante la Transformada de Fourier se utiliza el algoritmo FFT para transitar al dominio de la frecuencia.
+
+\begin{itemize}
+    \item \textbf{PSD y TSP:} La Densidad Espectral de Potencia (PSD) permite aislar las frecuencias espaciales del moteado, mientras que el TSP proporciona una medida de la energía espectral total para evaluar la severidad \cite{Ong2012}.
+    \item \textbf{Filtrado y Reconstrucción:} Se aplican técnicas de filtrado numérico y apodización Gaussiana para eliminar artefactos sistemáticos del Modulador Espacial de Luz (SLM). Es imperativo considerar el rol de filtrado del tamaño del píxel del sensor, el cual atenúa las frecuencias espaciales más altas mediante un proceso de convolución \cite{Kelly2013}.
+    \item \textbf{Separación de Píxeles:} Para minimizar el ruido de interferencia espuria en la generación de patrones, se utilizan técnicas de separación de píxeles, mejorando la fidelidad de la imagen reconstruida \cite{makowski2013}.
+\end{itemize}
+
+\subsubsection{Principios de Instrumentación Científica Computacional}
+El desarrollo de software para la ciencia se basa en principios de modularidad y reproducibilidad. La literatura destaca la importancia de integrar algoritmos de procesamiento en interfaces de usuario que permitan la gestión sistemática de parámetros experimentales. El uso de lenguajes de alto nivel como Python facilita esta integración, permitiendo que la arquitectura del software separe el núcleo de procesamiento matemático de la capa de interacción, garantizando que los resultados estadísticos sean trazables y consistentes bajo diferentes condiciones de entrada \cite{beg2017}.
+
+\subsection{Estado del Arte}
+
+El presente trabajo de grado se inscribe en la evolución de la metrología óptica digital, donde el análisis de patrones de moteado (\textit{speckle}) y el control de haces estructurados han pasado de ser conceptos teóricos a componentes esenciales en sistemas de instrumentación y comunicaciones. A continuación, se presentan los ejes técnicos que fundamentan el desarrollo de este proyecto.
+
+\subsubsection{Evolución de la Caracterización Estadística del Speckle}
+La utilidad del \textit{speckle} en este trabajo de grado reside en su capacidad para actuar como un portador de información sobre el medio o el haz que lo genera.
+\begin{itemize}
+    \item \textbf{Fundamentos:} La descripción clásica define al \textit{speckle} como un proceso estocástico resultante de una caminata aleatoria en el plano complejo, caracterizado por un contraste unitario en condiciones de coherencia total \cite{goodman2007speckle}.
+    \item \textbf{Métricas de Caracterización:} Para los fines de este proyecto, se adoptan métricas que superan el contraste escalar. El uso de la Densidad Espectral de Potencia (PSD) en representación polar permite cuantificar de manera independiente la severidad, la granularidad y la anisotropía del patrón \cite{Ong2012}.
+    \item \textbf{Sensibilidad Estructural:} Se ha demostrado que las variaciones en estas estadísticas permiten inferir propiedades de medios aleatorios discretos (DRM) incluso por debajo del límite de resolución del sistema óptico \cite{Almasian2017}.
+\end{itemize}
+
+\subsubsection{Haces de Mathieu-Gauss: Generación y Resiliencia}
+El uso de haces estructurados es el núcleo de la fase experimental de este trabajo.
+\begin{itemize}
+    \item \textbf{Implementación con SLM:} La generación de haces de Mathieu-Gauss (MG) de cualquier orden y elipticidad mediante Moduladores Espaciales de Luz (SLM) de solo fase representa la técnica más eficiente para el control de estos campos \cite{hernandez2010experimental}.
+    \item \textbf{Robustez en Coherencia Parcial:} Un hito reciente de 2025 demuestra que los haces MG mantienen sus características estructurales en la función de correlación cruzada (CCF), incluso cuando su intensidad se degrada por baja coherencia espacial o medios no homogéneos \cite{akbarpour2025partially}. Esta resiliencia justifica su elección para este sistema de metrología.
+\end{itemize}
+
+\subsubsection{Precisión en el Análisis Espaciotemporal}
+Dado que este trabajo de grado desarrolla un sistema computacional de procesamiento, la precisión algorítmica es prioritaria.
+\begin{itemize}
+    \item \textbf{Modelado de Dinámicas:} Las inconsistencias en la medición de muestras con movilidad lenta se resuelven mediante modelos que incorporan la correlación temporal entre píxeles adyacentes, asegurando que la caracterización sea precisa en diversos regímenes dinámicos \cite{JuarezRamirez2025}.
+\end{itemize}
+
+\subsubsection{Instrumentación Virtual y Compensación Digital}
+Para instrumentación virtual, es usual integrar el procesamiento en una interfaz gráfica (UI) 
+\begin{itemize}
+    \item \textbf{Reproducibilidad y Software:} El estado del arte en software científico valida el uso de lenguajes como Python para crear interfaces que garanticen la reproducibilidad y la gestión de metadatos experimentales \cite{beg2017}.
+    \item \textbf{Compensación del Sensor:} Es imperativo considerar que el tamaño del píxel del sensor actúa como un filtro de frecuencias espaciales. Este fenómeno, descrito en la teoría de holografía digital, debe ser compensado numéricamente para obtener una caracterización fiel del moteado \cite{Kelly2013}.
+\end{itemize}
+
+    \newpage
+% ================= METODOLOGÍA =================
+\section{\textbf{Metodología}}
+Para llevar a cabo este trabajo se propone una metodología basada en fases que corresponden al desarrollo de cada uno de los objetivos.
+
+\subsection{{Fase 1. Adquisición y Generación de Haces Estructurados}}
+
+Esta fase comprende la configuración óptica para la creación de campos de luz con estructura de fase compleja y la captura de su respuesta estadística.\\
+\subsubsection{{Actividad 1.1. Generación de haces de Mathieu-Gauss y captura de datos}}
+
+Se generarán haces Mathieu–Gauss mediante la modulación de fase de un haz láser He–Ne ($\lambda = 633$ nm), utilizando un Modulador Espacial de Luz (SLM). Los haces obtenidos iluminarán el sistema experimental dispuesto para la formación de patrones de speckle, los cuales serán registrados mediante una cámara digital. Se variarán sistemáticamente parámetros del haz, como el orden ($m$) y el parámetro de elipticidad ($q$) con el fin de analizar la influencia de la estructura del campo incidente sobre las propiedades estadísticas del patrón resultante. Para cada condición experimental se capturarán múltiples secuencias, garantizando repetibilidad y control sobre las variables de adquisición.
+
+\subsubsection{{Actividad 1.2. Almacenamiento y preservación de integridad}}
+Los datos experimentales se almacenarán en formatos de alta fidelidad, como secuencias TIFF o videos sin compresión. Esto es crítico para asegurar que no se altere la estadística de segundo orden ni las frecuencias espaciales necesarias para el análisis espectral \cite{Ong2012}.
+
+
+Se implementará un sistema de procesamiento digital de imágenes para garantizar la pureza de la señal óptica antes del análisis estadístico.\\
+
+\subsubsection{{Actividad 1.3. Filtrado en el dominio de Fourier}}
+
+Se aplicará una Transformada Rápida de Fourier (FFT) para aislar el término de orden cero y eliminar los artefactos sistemáticos producidos por la estructura pixelada del SLM y las interferencias espúreas \cite{makowski2013}. Se utilizarán filtros de apodización Gaussiana para mitigar el efecto de filtrado intrínseco del tamaño del píxel del sensor, el cual actúa como una convolución que atenúa las frecuencias espaciales más altas \cite{Kelly2013}.\\
+
+\subsection{{Fase 2. Análisis Estadístico}}
+Se desarrollarán algoritmos para estudiar la PSD, transformando las ímagenes del patrón de Speckle del dominio espacial al dominio de la frecuencia utilizando la Transformada de Fourier para extraer descriptores de segundo orden. Mediante estos algoritmos, se busca obtener una representación cuantitativa de la estructura del patrón que permita identificar la granularidad y la anisotropía del patron a analizar. \cite{Ong2012}
+
+
+
+\subsubsection{{Actividad 2.1. Implementación del Método del Periodograma mediante la Transformada de Fourier.}}
+
+Se desarrollará el algoritmo base para calcular la Densidad Espectral de Potencia (PSD) en coordenadas cartesianas. Utilizando la técnica de la Transformada Rápida de Fourier (FFT) 
+\cite{Ong2012}.
+
+\subsubsection{{Actividad 2.2. Transformación de Representación y Análisis Radial (rPSD) para la Granularidad.}}
+
+Se implementará un algoritmo para realizar el cambio de representación de la PSD de coordenadas cartesianas obtenidas en la actividad  2.1 a coordenadas polares. Sobre esta base, se programará el cálculo de la PSD radial (rPSD), la cual promedia la potencia sobre todas las orientaciones para cada frecuencia espacial. Lo que nos permite hallar la distribución de tamaños de grano del patron de speckle. \cite{Ong2012}.
+
+\subsubsection{{Actividad 2.3. Cálculo de la PSD Angular (aPSD) y Estimación de la Energía Espectral (TSP).}}
+
+Se desarrollará un algoritmo para obtener la PSD angular (aPSD) mediante una integral de sector, capturando las variaciones direccionales de la potencia para cuantificar la anisotropía del patrón generada por la estructura del haz, usando la portencia se calculará la métrica del Total Spectral Power (TSP) sumando la potencia en todas las frecuencias y ángulos. Estos datos permitirán evaluar la severidad del speckle y analizar su evolución temporal a partir de las correlaciones entre los cuadros del video analizado. \cite{Ong2012}
+
+
+
+\subsection{{Fase 3. Análisis Estadístico}}
+Se extraerán descriptores cuantitativos que permitan caracterizar el haz y el medio a partir del patrón de moteado resultante.\\
+
+\subsubsection{{Actividad 3.1. Caracterización de primer y segundo orden}}
+Se calculará el contraste de speckle ($C$) y el Total Spectral Power (TSP) como métricas de severidad de la fluctuación. Para una descripción morfológica, se analizará la Densidad Espectral de Potencia (PSD) para cuantificar la granularidad y la anisotropía del patrón \cite{Ong2012}. 
+En escenarios de baja coherencia, se empleará la Función de Correlación Cruzada (CCF) para identificar la persistencia de las características estructurales del haz \cite{akbarpour2025partially}.\\
+
+\subsection{{Fase 4. Caracterización e Interpretación Física del Perfil de Speckle}}
+Esta fase se enfoca en caracterizar e interpetar los resultados obtenidos, asociando los resultados númericos obtenidos de los descriptores estadisticos a los fenomenos físicos del Speckle. De esta forma se  valida la capacidad del sistema para identificar rasgos estructurales únicos en patrones de speckle generados por haces estructurados, facilitando la comprensión de la interacción entre la geometría del campo iluminante y la respuesta granular del sistema.\\
+\subsubsection{{Actividad 4.1. Correlación de Métricas de Severidad y Granularidad con el Perfil Fisico}}
+
+Se realizará un análisis comparativo entre el contraste calculado y el Total Spectral Power (TSP) para verificar su consistencia como medidas de la severidad del speckle
+. Asimismo, se interpretarán las curvas de la rPSD para determinar cómo la distribución de los tamaños de grano se ve afectada por la configuración del haz, vinculando las frecuencias espaciales dominantes con las dimensiones físicas de las estructuras de interferencia en el plano de observación.  \cite{moreno2023evaluacion}
+
+\subsubsection{{Actividad 4.2. Evaluación de la Anisotropía y Orientación en Función de la Geometría del Haz.}}
+
+Se relacionarán los picos de potencia detectados en la aPSD con la orientación física y el grado de estiramiento de los granos de speckle. Se analizará cómo los cambios en los parámetros reales del haz estructurado se traducen en variaciones de la anisotropía que se manifiestan en la desviación estándar de la aPSD, permitiendo identificar direcciones preferenciales de variación estructural que son imperceptibles usando métricas convencionales  \cite{Ong2012}.
+
+\subsubsection{{Actividad 4.3. Análisis de Correlación Espacio-Temporal y Estabilidad del Sistema.}}
+
+Se estudiarán las longitudes y tiempos de correlación para caracterizar la evolución dinámica del patrón entre los cuadros del video con el objetivo es determinar si las fluctuaciones observadas corresponden a cambios intrínsecos en la fase del campo electromagnético o a factores externos de adquisición  \cite{Ong2012}.
+
+\subsection{{Fase 5. Integración en Interfaz Gráfica (UI)}}
+Se desarrollará una arquitectura de software en Python para centralizar y automatizar el flujo de trabajo metrológico.\\
+\subsubsection{{Actividad 5.1. Desarrollo del entorno de instrumentación virtual}}
+
+Se diseñará una interfaz gráfica de usuario (UI) enfocada en la presentación sistemática de los estadísticos obtenidos y la caracterización integral del patrón de speckle. La herramienta permitirá cargar los datos, aplicar los procesos de limpieza y visualizar los resultados de las métricas de primer y segundo orden de forma interactiva. El sistema asegurará la reproducibilidad del experimento al separar los parámetros de configuración del código de procesamiento base \cite{beg2017}.
+% ================= CRONOGRAMA =================
+% ================= CRONOGRAMA =================
+\newpage
+\section{\textbf{Cronograma}}
+
+\begin{table}[ht!]
+\centering
+\caption{Cronograma de actividades para la caracterización de patrones de speckle mediante haces estructurados}
+\label{tab:cronograma_tesis_actualizado}
+\scriptsize
+\begin{tabular}{|p{5.5cm}|*{16}{p{0.25cm}|}}
+\hline
+\multirow{2}{*}{\textbf{ACTIVIDAD}} & \multicolumn{16}{c|}{\textbf{SEMANA}} \\ \cline{2-17} 
+ & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 & 16 \\ \hline
+
+\rowcolor[HTML]{EFEFEF} 
+\multicolumn{17}{|l|}{\textbf{Fase 1. Adquisición y Generación de Haces Estructurados}} \\ \hline
+Actividad 1.1. Generación de haces de Mathieu-Gauss y captura de datos & \cellcolor[HTML]{B4C6E7} & \cellcolor[HTML]{B4C6E7} & & & & & & & & & & & & & & \\ \hline
+Actividad 1.2. Almacenamiento y preservación de integridad &\cellcolor[HTML]{B4C6E7} & \cellcolor[HTML]{B4C6E7} & \cellcolor[HTML]{B4C6E7} & & & & & & & & & & & & & \\ \hline
+Actividad 1.3. Filtrado en el dominio de Fourier & & & \cellcolor[HTML]{B4C6E7} & \cellcolor[HTML]{B4C6E7} & & & & & & & & & & & & \\ \hline
+
+\rowcolor[HTML]{EFEFEF} 
+\multicolumn{17}{|l|}{\textbf{Fase 2. Análisis Estadístico (Algoritmos de Frecuencia)}} \\ \hline
+Actividad 2.1. Implementación del Periodograma mediante FFT & & & & & \cellcolor[HTML]{C6E0B4} & \cellcolor[HTML]{C6E0B4} & & & & & & & & & & \\ \hline
+Actividad 2.2. Análisis Radial (rPSD) para la Granularidad & & & & & & \cellcolor[HTML]{C6E0B4} & \cellcolor[HTML]{C6E0B4} & & & & & & & & & \\ \hline
+Actividad 2.3. Cálculo de aPSD y Estimación de la Energía (TSP) & & & & & & & \cellcolor[HTML]{C6E0B4} & \cellcolor[HTML]{C6E0B4} & & & & & & & & \\ \hline
+
+\rowcolor[HTML]{EFEFEF} 
+\multicolumn{17}{|l|}{\textbf{Fase 3. Análisis Estadístico (Métricas)}} \\ \hline
+Actividad 3.1. Caracterización de primer y segundo orden & & & & & & & & & \cellcolor[HTML]{FFE699} & \cellcolor[HTML]{FFE699} & & & & & & \\ \hline
+
+\rowcolor[HTML]{EFEFEF} 
+\multicolumn{17}{|l|}{\textbf{Fase 4. Caracterización e Interpretación Física}} \\ \hline
+Actividad 4.1. Correlación de métricas con el perfil físico & & & & & & & & & & & \cellcolor[HTML]{F8CBAD} & \cellcolor[HTML]{F8CBAD} & & & & \\ \hline
+Actividad 4.2. Evaluación de la Anisotropía y Geometría del Haz & & & & & & & & & & & & \cellcolor[HTML]{F8CBAD} & \cellcolor[HTML]{F8CBAD} & & & \\ \hline
+Actividad 4.3. Análisis de Correlación Espacio-Temporal & & & & & & & & & & & & & \cellcolor[HTML]{F8CBAD} & \cellcolor[HTML]{F8CBAD} & & \\ \hline
+
+\rowcolor[HTML]{EFEFEF} 
+\multicolumn{17}{|l|}{\textbf{Fase 5. Integración en Interfaz Gráfica (UI)}} \\ \hline
+Actividad 5.1. Desarrollo del entorno de instrumentación virtual & & & & & & & & & & & & & & & \cellcolor[HTML]{D9E1F2} & \cellcolor[HTML]{D9E1F2} \\ \hline
+
+\end{tabular}
+\end{table}
+
+
+% ================= PRESUPUESTO =================
+\newpage
+\section{\textbf{Presupuesto}}
+
+\begin{table}[!ht]
+\centering
+\caption{Recursos humanos}
+\renewcommand{\arraystretch}{1.2} % Espaciado vertical
+\setlength{\tabcolsep}{5pt} % Espaciado horizontal
+\begin{tabular}{|>{\centering\arraybackslash}p{4.5cm}|
+                >{\centering\arraybackslash}p{2.3cm}|
+                >{\centering\arraybackslash}p{2.2cm}|
+                >{\centering\arraybackslash}p{2.8cm}|
+                >{\centering\arraybackslash}p{2.8cm}|}
+\hline
+\textbf{Nombre} & 
+\textbf{Función} & 
+\makecell[c]{\textbf{Horas}\\\textbf{semanales}} & 
+\makecell[c]{\textbf{Costo/}\\\textbf{hora (COP)}} & 
+\textbf{Total (COP)} \\ \hline
+
+PhD. Laura Viviana Galvis Carreño & Co-Directora & 4 & \$305,000 & \$19,520,000 \\ \hline
+Daniel Alejandro Ayala Vallejo & Autor & 20 & \$11,863 & \$3,796,160 \\ \hline
+Juan Jeronimo Jauregui Prince & Autor & 20 & \$11,863 & \$3,796,160 \\ \hline
+
+\textbf{Total} &  &  &  & \textbf{\$27,112,320} \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\centering
+\caption{Equipos e infraestructura}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{|>{\centering\arraybackslash}p{4cm}|
+                >{\centering\arraybackslash}p{3cm}|
+                >{\centering\arraybackslash}p{3cm}|
+                >{\centering\arraybackslash}p{3cm}|}
+\hline
+\textbf{Elemento} & \textbf{Costo comercial (COP)} & \textbf{Costo por uso (COP)} & \textbf{Patrocinador} \\ \hline
+Computadores (2 unidades) & \$3,500,000 & \$350,000 & Autores \\ \hline
+Bibliografía & -- & \$1,000,000 & UIS \\ \hline
+\textbf{Subtotal} &  & \textbf{\$1,350,000} &  \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\centering
+\caption{Presupuesto general}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{|>{\centering\arraybackslash}p{4cm}|
+                >{\centering\arraybackslash}p{3cm}|
+                >{\centering\arraybackslash}p{3cm}|
+                >{\centering\arraybackslash}p{3cm}|}
+\hline
+\textbf{Elemento} & \textbf{Efectivo (COP)} & \textbf{Especie (COP)} & \textbf{Patrocinador} \\ \hline
+Recursos humanos & -- & \$27,112,320 & UIS \\ \hline
+Equipos e infraestructura & -- & \$1,350,000 & Autores / UIS \\ \hline
+\textbf{Subtotal} & -- & \textbf{\$28,462,320} &  \\ \hline
+Costos inesperados (3\%) & -- & \$853,869 &  \\ \hline
+\textbf{Total por tipo} & -- & \textbf{\$29,316,189} &  \\ \hline
+\end{tabular}
+\end{table}
+
+% ================= BIBLIOGRAFÍA =================
+\newpage
+
+
+\bibliographystyle{ieeetr}
+\bibliography{referencias} 
+\end{document}
