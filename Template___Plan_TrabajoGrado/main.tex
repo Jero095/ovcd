@@ -229,72 +229,99 @@ Para instrumentación virtual, es usual integrar el procesamiento en una interfa
     \newpage
 % ================= METODOLOGÍA =================
 \section{\textbf{Metodología}}
-Para llevar a cabo este trabajo se propone una metodología basada en fases que corresponden al desarrollo de cada uno de los objetivos.
+Para el desarrollo de este trabajo se propone una metodología organizada en fases, cada una compuesta por un conjunto de actividades que describen las acciones concretas requeridas para llevarla a cabo.
 
-\subsection{{Fase 1. Adquisición y Generación de Haces Estructurados}}
+\subsection{{Fase 1. Carga y alineación espectral}}
 
-Esta fase comprende la configuración óptica para la creación de campos de luz con estructura de fase compleja y la captura de su respuesta estadística.\\
-\subsubsection{{Actividad 1.1. Generación de haces de Mathieu-Gauss y captura de datos}}
+Esta fase comprende la lectura de los pares de imágenes hiperespectrales bitemporales y su preparación para el análisis, de modo que ambas adquisiciones queden expresadas en un mismo espacio espectral y en un rango de valores homogéneo.
 
-Se generarán haces Mathieu–Gauss mediante la modulación de fase de un haz láser He–Ne ($\lambda = 633$ nm), utilizando un Modulador Espacial de Luz (SLM). Los haces obtenidos iluminarán el sistema experimental dispuesto para la formación de patrones de speckle, los cuales serán registrados mediante una cámara digital. Se variarán sistemáticamente parámetros del haz, como el orden ($m$) y el parámetro de elipticidad ($q$) con el fin de analizar la influencia de la estructura del campo incidente sobre las propiedades estadísticas del patrón resultante. Para cada condición experimental se capturarán múltiples secuencias, garantizando repetibilidad y control sobre las variables de adquisición.
+\subsubsection{{Actividad 1.1. Carga de los pares hiperespectrales}}
 
-\subsubsection{{Actividad 1.2. Almacenamiento y preservación de integridad}}
-Los datos experimentales se almacenarán en formatos de alta fidelidad, como secuencias TIFF o videos sin compresión. Esto es crítico para asegurar que no se altere la estadística de segundo orden ni las frecuencias espaciales necesarias para el análisis espectral \cite{Ong2012}.
+Se implementará un módulo de carga capaz de leer imágenes hiperespectrales en formatos ENVI, MATLAB y GeoTIFF, extrayendo de cada archivo el cubo de datos con sus dimensiones espaciales y espectrales, junto con las longitudes de onda asociadas a cada banda. Cuando el archivo no contenga esta información, se asignará una distribución uniforme de longitudes de onda como valor por defecto.
 
+\subsubsection{{Actividad 1.2. Alineación a un espacio espectral de referencia}}
 
-Se implementará un sistema de procesamiento digital de imágenes para garantizar la pureza de la señal óptica antes del análisis estadístico.\\
+Se reinterpolarán las bandas de ambas imágenes a un espacio espectral de referencia común mediante interpolación lineal, garantizando que las dos adquisiciones tengan el mismo número de bandas y las mismas longitudes de onda. Posteriormente se normalizará cada banda de forma independiente a un rango fijo, para homogeneizar los niveles de reflectancia antes de la extracción de características.
 
-\subsubsection{{Actividad 1.3. Filtrado en el dominio de Fourier}}
+\subsection{{Fase 2. Extracción de características y detección de cambio}}
+En esta fase se obtienen representaciones profundas de cada imagen del par mediante un modelo fundacional hiperespectral y se comparan para localizar las regiones que presentan cambios entre los dos instantes de tiempo.
 
-Se aplicará una Transformada Rápida de Fourier (FFT) para aislar el término de orden cero y eliminar los artefactos sistemáticos producidos por la estructura pixelada del SLM y las interferencias espúreas \cite{makowski2013}. Se utilizarán filtros de apodización Gaussiana para mitigar el efecto de filtrado intrínseco del tamaño del píxel del sensor, el cual actúa como una convolución que atenúa las frecuencias espaciales más altas \cite{Kelly2013}.\\
+\subsubsection{{Actividad 2.1. Carga del modelo fundacional HyperSIGMA}}
 
-\subsection{{Fase 2. Análisis Estadístico}}
-Se desarrollarán algoritmos para estudiar la PSD, transformando las ímagenes del patrón de Speckle del dominio espacial al dominio de la frecuencia utilizando la Transformada de Fourier para extraer descriptores de segundo orden. Mediante estos algoritmos, se busca obtener una representación cuantitativa de la estructura del patrón que permita identificar la granularidad y la anisotropía del patron a analizar. \cite{Ong2012}
+Se cargará el codificador espacial de HyperSIGMA a partir de sus pesos preentrenados sobre imágenes hiperespectrales. Durante la construcción del modelo se fijará una semilla de inicialización, de modo que cada ejecución produzca las mismas representaciones y, con ello, resultados reproducibles.
 
+\subsubsection{{Actividad 2.2. Extracción de características densas}}
 
+Se procesará cada imagen alineada con el modelo para obtener un mapa de características profundo. Las imágenes de gran tamaño se dividirán en bloques solapados que se procesarán por separado y se combinarán mediante un promedio ponderado, con el fin de evitar artefactos en los bordes y superar las limitaciones de memoria.
 
-\subsubsection{{Actividad 2.1. Implementación del Método del Periodograma mediante la Transformada de Fourier.}}
+\subsubsection{{Actividad 2.3. Cálculo del mapa de cambio}}
 
-Se desarrollará el algoritmo base para calcular la Densidad Espectral de Potencia (PSD) en coordenadas cartesianas. Utilizando la técnica de la Transformada Rápida de Fourier (FFT) 
-\cite{Ong2012}.
-
-\subsubsection{{Actividad 2.2. Transformación de Representación y Análisis Radial (rPSD) para la Granularidad.}}
-
-Se implementará un algoritmo para realizar el cambio de representación de la PSD de coordenadas cartesianas obtenidas en la actividad  2.1 a coordenadas polares. Sobre esta base, se programará el cálculo de la PSD radial (rPSD), la cual promedia la potencia sobre todas las orientaciones para cada frecuencia espacial. Lo que nos permite hallar la distribución de tamaños de grano del patron de speckle. \cite{Ong2012}.
-
-\subsubsection{{Actividad 2.3. Cálculo de la PSD Angular (aPSD) y Estimación de la Energía Espectral (TSP).}}
-
-Se desarrollará un algoritmo para obtener la PSD angular (aPSD) mediante una integral de sector, capturando las variaciones direccionales de la potencia para cuantificar la anisotropía del patrón generada por la estructura del haz, usando la portencia se calculará la métrica del Total Spectral Power (TSP) sumando la potencia en todas las frecuencias y ángulos. Estos datos permitirán evaluar la severidad del speckle y analizar su evolución temporal a partir de las correlaciones entre los cuadros del video analizado. \cite{Ong2012}
+Se calculará un mapa de cambio comparando las características de ambas imágenes píxel a píxel mediante la similitud coseno, de manera que los valores altos correspondan a las zonas donde la representación semántica varió. El mapa continuo se llevará al tamaño original de la escena y se binarizará mediante un umbral automático para aislar las regiones de cambio.
 
 
 
-\subsection{{Fase 3. Análisis Estadístico}}
-Se extraerán descriptores cuantitativos que permitan caracterizar el haz y el medio a partir del patrón de moteado resultante.\\
+\subsection{{Fase 3. Segmentación de las regiones de cambio}}
+Esta fase transforma las regiones de cambio, inicialmente difusas, en máscaras precisas a nivel de píxel que delimitan con exactitud cada zona modificada.
 
-\subsubsection{{Actividad 3.1. Caracterización de primer y segundo orden}}
-Se calculará el contraste de speckle ($C$) y el Total Spectral Power (TSP) como métricas de severidad de la fluctuación. Para una descripción morfológica, se analizará la Densidad Espectral de Potencia (PSD) para cuantificar la granularidad y la anisotropía del patrón \cite{Ong2012}. 
-En escenarios de baja coherencia, se empleará la Función de Correlación Cruzada (CCF) para identificar la persistencia de las características estructurales del haz \cite{akbarpour2025partially}.\\
+\subsubsection{{Actividad 3.1. Composición de una imagen RGB de la escena}}
 
-\subsection{{Fase 4. Caracterización e Interpretación Física del Perfil de Speckle}}
-Esta fase se enfoca en caracterizar e interpetar los resultados obtenidos, asociando los resultados númericos obtenidos de los descriptores estadisticos a los fenomenos físicos del Speckle. De esta forma se  valida la capacidad del sistema para identificar rasgos estructurales únicos en patrones de speckle generados por haces estructurados, facilitando la comprensión de la interacción entre la geometría del campo iluminante y la respuesta granular del sistema.\\
-\subsubsection{{Actividad 4.1. Correlación de Métricas de Severidad y Granularidad con el Perfil Fisico}}
+Se sintetizará una imagen de tres canales a partir del cubo hiperespectral, seleccionando las bandas más cercanas a los colores rojo, verde y azul o mediante una reducción de dimensionalidad. Esta imagen servirá de entrada para el modelo de segmentación, que opera sobre imágenes de tres canales.
 
-Se realizará un análisis comparativo entre el contraste calculado y el Total Spectral Power (TSP) para verificar su consistencia como medidas de la severidad del speckle
-. Asimismo, se interpretarán las curvas de la rPSD para determinar cómo la distribución de los tamaños de grano se ve afectada por la configuración del haz, vinculando las frecuencias espaciales dominantes con las dimensiones físicas de las estructuras de interferencia en el plano de observación.  \cite{moreno2023evaluacion}
+\subsubsection{{Actividad 3.2. Generación de indicaciones espaciales}}
 
-\subsubsection{{Actividad 4.2. Evaluación de la Anisotropía y Orientación en Función de la Geometría del Haz.}}
+Se procesará el mapa de cambio binarizado para extraer las regiones conectadas, descartando aquellas cuya área sea inferior a un umbral mínimo. Por cada región se generará una indicación espacial, en forma de recuadro delimitador o de punto central, junto con una máscara aproximada que servirá para acotar la segmentación.
 
-Se relacionarán los picos de potencia detectados en la aPSD con la orientación física y el grado de estiramiento de los granos de speckle. Se analizará cómo los cambios en los parámetros reales del haz estructurado se traducen en variaciones de la anisotropía que se manifiestan en la desviación estándar de la aPSD, permitiendo identificar direcciones preferenciales de variación estructural que son imperceptibles usando métricas convencionales  \cite{Ong2012}.
+\subsubsection{{Actividad 3.3. Segmentación con Segment Anything}}
 
-\subsubsection{{Actividad 4.3. Análisis de Correlación Espacio-Temporal y Estabilidad del Sistema.}}
+Se ejecutará el modelo Segment Anything sobre la imagen de la escena usando las indicaciones generadas, obteniendo una máscara precisa por cada región. Cada máscara se intersecará con la región de cambio correspondiente para confinarla a la zona efectivamente modificada.
 
-Se estudiarán las longitudes y tiempos de correlación para caracterizar la evolución dinámica del patrón entre los cuadros del video con el objetivo es determinar si las fluctuaciones observadas corresponden a cambios intrínsecos en la fase del campo electromagnético o a factores externos de adquisición  \cite{Ong2012}.
+\subsection{{Fase 4. Etiquetado de vocabulario abierto}}
+En esta fase se asigna a cada región segmentada una etiqueta semántica tomada de un vocabulario textual libre, sin recurrir a un conjunto cerrado de clases.
 
-\subsection{{Fase 5. Integración en Interfaz Gráfica (UI)}}
-Se desarrollará una arquitectura de software en Python para centralizar y automatizar el flujo de trabajo metrológico.\\
-\subsubsection{{Actividad 5.1. Desarrollo del entorno de instrumentación virtual}}
+\subsubsection{{Actividad 4.1. Definición del vocabulario de cambio}}
 
-Se diseñará una interfaz gráfica de usuario (UI) enfocada en la presentación sistemática de los estadísticos obtenidos y la caracterización integral del patrón de speckle. La herramienta permitirá cargar los datos, aplicar los procesos de limpieza y visualizar los resultados de las métricas de primer y segundo orden de forma interactiva. El sistema asegurará la reproducibilidad del experimento al separar los parámetros de configuración del código de procesamiento base \cite{beg2017}.
+Se establecerá un vocabulario abierto formado por descripciones textuales de los tipos de cambio de interés, como deforestación, construcción urbana, inundación o incendio, que podrá ampliarse o modificarse según la aplicación sin necesidad de reentrenar el sistema.
+
+\subsubsection{{Actividad 4.2. Clasificación con CLIP}}
+
+Se recortará cada región en las imágenes de ambos tiempos y se codificarán tanto los recortes como el vocabulario en el espacio de representación compartido de CLIP. A cada región se le asignará la descripción textual de mayor similitud, obteniendo así una etiqueta de vocabulario abierto para el cambio detectado.
+
+\subsection{{Fase 5. Descripción en lenguaje natural con HyperCap}}
+Esta fase complementa la etiqueta de vocabulario abierto con una descripción en lenguaje natural de cada región, generada directamente a partir del cubo hiperespectral para aprovechar la firma espectral completa.
+
+\subsubsection{{Actividad 5.1. Construcción del modelo de descripción}}
+
+Se construirá un modelo de generación de descripciones basado en la arquitectura BLIP, reemplazando su codificador de visión por uno específico para datos hiperespectrales que procesa parches espectrales de la escena. Se añadirá una capa de adaptación que conecte este codificador con el decodificador de texto encargado de producir la descripción.
+
+\subsubsection{{Actividad 5.2. Entrenamiento sobre el conjunto de datos HyperCap}}
+
+Se entrenará el modelo de descripción con las escenas anotadas del conjunto de datos HyperCap, que asocia a cada píxel una descripción textual de su cobertura. El entrenamiento se realizará en una unidad de procesamiento gráfico, normalizando los datos de la misma forma en que se preparan las imágenes dentro del sistema.
+
+\subsubsection{{Actividad 5.3. Generación de descripciones por región}}
+
+Se extraerá un parche centrado en cada región de cambio y se generará una descripción para el estado anterior y para el estado posterior. La combinación de ambas descripciones permitirá caracterizar en lenguaje natural la transformación ocurrida en cada zona.
+
+\subsection{{Fase 6. Integración del sistema y visualización}}
+Esta fase reúne todas las etapas anteriores en una única cadena de procesamiento automatizada y define la forma en que se presentan los resultados.
+
+\subsubsection{{Actividad 6.1. Orquestación del pipeline}}
+
+Se integrarán las etapas de carga, alineación, extracción de características, detección de cambio, segmentación, etiquetado y descripción en una única cadena ejecutable, controlada mediante una interfaz de línea de comandos que permita configurar los parámetros del proceso.
+
+\subsubsection{{Actividad 6.2. Visualización de resultados}}
+
+Se generará una visualización que presente las imágenes de ambos tiempos, el mapa de cambio y las regiones detectadas con sus máscaras, etiquetas y descripciones superpuestas, de manera que los resultados sean fáciles de interpretar.
+
+\subsection{{Fase 7. Validación cuantitativa}}
+Esta fase evalúa de forma objetiva el desempeño del sistema, contrastando sus detecciones con datos de referencia.
+
+\subsubsection{{Actividad 7.1. Selección del conjunto de datos de referencia}}
+
+Se seleccionará un par de imágenes hiperespectrales bitemporales que cuente con verdad de terreno, es decir, con un mapa de referencia que indique las zonas realmente modificadas entre las dos adquisiciones.
+
+\subsubsection{{Actividad 7.2. Evaluación con métricas}}
+
+Se compararán las regiones de cambio detectadas por el sistema con la verdad de terreno y se calcularán métricas de desempeño como la precisión, la exhaustividad y el puntaje F1, lo que permitirá cuantificar la calidad de la detección y comparar distintas configuraciones.
 % ================= CRONOGRAMA =================
 % ================= CRONOGRAMA =================
 \newpage
