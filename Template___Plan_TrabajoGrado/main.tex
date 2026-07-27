@@ -158,73 +158,48 @@ Este trabajo se desarrolla en el marco de las líneas de investigación de la Es
 \addtocontents{toc}{\protect\setcounter{tocdepth}{3}}
 \section{Marco de referencia}
 \subsection{Marco teórico}
-\subsubsection{Teoría Fundamental del Moteado Láser (Speckle)}
-El fenómeno de \textit{speckle} surge de la interferencia aleatoria de ondas de luz coherente tras interactuar con un medio difusor. Tradicionalmente, un patrón de moteado completamente desarrollado se describe mediante una caminata aleatoria en el plano complejo, resultando en una estadística de irradiancia con distribución exponencial negativa y un contraste unitario \cite{goodman2007speckle}. Sin embargo, en la caracterización de medios aleatorios discretos (DRM), la estadística del \textit{speckle} permite extraer información sobre propiedades estructurales sub-resolución, tales como el tamaño y la organización de las partículas dispersoras \cite{Almasian2017}.
 
-Para una caracterización exhaustiva que defina las características deseadas en el sistema, se emplean tres descriptores críticos \cite{Ong2012}:
-\begin{itemize}
-    \item \textbf{Severidad:} Representa la magnitud de la variación de intensidad, cuantificable mediante el contraste o el \textit{Total Spectral Power} (TSP).
-    \item \textbf{Granularidad:} Define la distribución del tamaño de grano del moteado, inversamente proporcional a la frecuencia espacial radial en la Densidad Espectral de Potencia (PSD).
-    \item \textbf{Anisotropía:} Indica la distribución inhomogénea del moteado respecto a la dirección, detectable mediante el análisis polar de la PSD.
-\end{itemize}
+\subsubsection{Imágenes hiperespectrales}
+\textit{[Pendiente por redactar. Definir qué es una imagen hiperespectral, el cubo de datos y la firma espectral; cómo se adquiere; y en qué se diferencia de una imagen RGB o multiespectral, con sus ventajas y aplicaciones. Fuente: \cite{bhargava2024hyperspectral}. Borrador en \texttt{borrador-marco-teorico.md}, sección 2.1.]}
 
-\subsubsection{Teoría de Haces: Haces Estructurados y Mathieu-Gauss}
-Los haces estructurados son soluciones de la ecuación de onda que presentan distribuciones de fase y amplitud diseñadas de manera específica. Los Haces de Mathieu-Gauss (MG) destacan por ser soluciones de la ecuación de Helmholtz en coordenadas cilíndricas elípticas, caracterizándose por ser haces no difractantes que mantienen su forma durante la propagación \cite{hernandez2010experimental}. Estos haces se definen por parámetros fundamentales como el orden ($m$), la excentricidad y el parámetro de elipticidad ($q$).
+\subsubsection{Detección de cambios en imágenes bitemporales}
+\textit{[Pendiente por redactar. Definir la detección de cambios, su papel en teledetección y el paso de las técnicas clásicas basadas en píxeles a los métodos de aprendizaje profundo; precisar el carácter bitemporal. Fuente: \cite{khelifi2020deep}. Borrador sección 2.2.]}
 
-En regímenes de coherencia parcial, los haces MG muestran una notable resiliencia; aunque su perfil de intensidad se deteriore con la propagación, sus características estructurales permanecen codificadas y pueden recuperarse a través de la función de correlación cruzada (CCF) \cite{akbarpour2025partially}.
+\subsubsection{Segmentación de imágenes}
+\textit{[Pendiente por redactar. Definir la segmentación a nivel de píxel frente a la clasificación, y la segmentación promptable a partir de indicaciones espaciales. Fuente: \cite{kirillov2023sam}. Borrador sección 2.3.]}
 
-\subsubsection{Haces con Momento Angular Orbital (OAM)}
-La superposición de modos de Mathieu (pares e impares) con un desfase de $\pi/2$ da lugar a haces de Mathieu helicoidales. Estos haces poseen una fase en espiral que les confiere Momento Angular Orbital (OAM), transportando una carga topológica definida \cite{hernandez2010experimental}. El control del OAM en estos haces es crítico para aplicaciones que requieren manipulación de partículas o transmisión de información robusta en medios no homogéneos, ya que la estructura del núcleo del vórtice elíptico se mantiene incluso ante reducciones en la coherencia espacial del sistema \cite{akbarpour2025partially}.
+\subsubsection{Transformers y modelos fundacionales}
+\textit{[Pendiente por redactar. Definir la arquitectura transformador y el mecanismo de atención; el Vision Transformer como base común de los modelos; y el concepto de modelo fundacional. Fuentes: \cite{vaswani2017attention}, \cite{dosovitskiy2021vit}, \cite{wang2024hypersigma}. Borrador secciones 2.4 y 2.5.]}
 
-\subsubsection{Técnicas de Análisis y Dinámica Temporal}
-Para el estudio de sistemas dinámicos, se emplean técnicas estadísticas avanzadas:
-\begin{itemize}
-    \item \textbf{Dinámica Temporal y Correlación:} Existe una relación directa entre el tamaño del grano y el tiempo de decorrelación ($\tau_c$): granos espaciales mayores muestran una decorrelación más lenta \cite{Rajan2008}. Modelos recientes demuestran que la correlación entre cuadros adyacentes es fundamental para evitar errores de interpretación en muestras con dinámicas lentas \cite{JuarezRamirez2025}.
-\end{itemize}
+\subsubsection{Aprendizaje zero-shot y vocabulario abierto}
+\textit{[Pendiente por redactar. Definir el aprendizaje zero-shot y el enfoque de vocabulario abierto, y cómo la alineación entre imagen y lenguaje habilita el etiquetado sin clases predefinidas. Fuentes: \cite{radford2021clip}, \cite{pang2025special}, \cite{kombol2025trainingfree}, \cite{zhu2025semanticcd}. Borrador secciones 2.6 y 2.7.]}
 
-\subsubsection{Métodos Computacionales y Tratamiento de Imágenes}
-Para el procesamiento digital de señales ópticas mediante la Transformada de Fourier se utiliza el algoritmo FFT para transitar al dominio de la frecuencia.
+\subsubsection{Modelos de visión-lenguaje y descripción de imágenes}
+\textit{[Pendiente por redactar. Definir los modelos de visión-lenguaje y el espacio común imagen-texto; la descripción de imágenes en lenguaje natural; y el conjunto HyperCap para el dominio hiperespectral. Fuentes: \cite{radford2021clip}, \cite{li2022blip}, \cite{das2025hypercap}. Borrador sección 2.8.]}
 
-\begin{itemize}
-    \item \textbf{PSD y TSP:} La Densidad Espectral de Potencia (PSD) permite aislar las frecuencias espaciales del moteado, mientras que el TSP proporciona una medida de la energía espectral total para evaluar la severidad \cite{Ong2012}.
-    \item \textbf{Filtrado y Reconstrucción:} Se aplican técnicas de filtrado numérico y apodización Gaussiana para eliminar artefactos sistemáticos del Modulador Espacial de Luz (SLM). Es imperativo considerar el rol de filtrado del tamaño del píxel del sensor, el cual atenúa las frecuencias espaciales más altas mediante un proceso de convolución \cite{Kelly2013}.
-    \item \textbf{Separación de Píxeles:} Para minimizar el ruido de interferencia espuria en la generación de patrones, se utilizan técnicas de separación de píxeles, mejorando la fidelidad de la imagen reconstruida \cite{makowski2013}.
-\end{itemize}
+\subsubsection{Representaciones vectoriales y similitud coseno}
+\textit{[Pendiente por redactar. Definir los \textit{embeddings} y la similitud coseno, y cómo se construye el mapa de cambio a partir de la similitud entre las representaciones inicial y final. Fuente: \cite{wang2024hypersigma}. Borrador sección 2.9.]}
 
-\subsubsection{Principios de Instrumentación Científica Computacional}
-El desarrollo de software para la ciencia se basa en principios de modularidad y reproducibilidad. La literatura destaca la importancia de integrar algoritmos de procesamiento en interfaces de usuario que permitan la gestión sistemática de parámetros experimentales. El uso de lenguajes de alto nivel como Python facilita esta integración, permitiendo que la arquitectura del software separe el núcleo de procesamiento matemático de la capa de interacción, garantizando que los resultados estadísticos sean trazables y consistentes bajo diferentes condiciones de entrada \cite{beg2017}.
+\subsubsection{Métricas de evaluación}
+\textit{[Pendiente por redactar. Definir precisión, exhaustividad, puntaje F1 e intersección sobre unión como estándar de evaluación de la detección de cambios. Fuente: \cite{khelifi2020deep}. Borrador sección 2.10.]}
 
-\subsection{Estado del Arte}
+\subsubsection{Modelos y datos empleados en el sistema}
+\textit{[Pendiente por redactar. Presentar ya como tecnología concreta las piezas del sistema: HyperSIGMA \cite{wang2024hypersigma}, Segment Anything \cite{kirillov2023sam}, CLIP \cite{radford2021clip}, BLIP \cite{li2022blip} y el conjunto HyperCap \cite{das2025hypercap}. Borrador sección 2.11.]}
 
-El presente trabajo de grado se inscribe en la evolución de la metrología óptica digital, donde el análisis de patrones de moteado (\textit{speckle}) y el control de haces estructurados han pasado de ser conceptos teóricos a componentes esenciales en sistemas de instrumentación y comunicaciones. A continuación, se presentan los ejes técnicos que fundamentan el desarrollo de este proyecto.
+\subsection{Estado del arte}
+\textit{[Pendiente por redactar como argumento hilado, no como lista, que termine en el vacío de investigación. Borrador en \texttt{borrador-marco-teorico.md}, sección 3.]}
 
-\subsubsection{Evolución de la Caracterización Estadística del Speckle}
-La utilidad del \textit{speckle} en este trabajo de grado reside en su capacidad para actuar como un portador de información sobre el medio o el haz que lo genera.
-\begin{itemize}
-    \item \textbf{Fundamentos:} La descripción clásica define al \textit{speckle} como un proceso estocástico resultante de una caminata aleatoria en el plano complejo, caracterizado por un contraste unitario en condiciones de coherencia total \cite{goodman2007speckle}.
-    \item \textbf{Métricas de Caracterización:} Para los fines de este proyecto, se adoptan métricas que superan el contraste escalar. El uso de la Densidad Espectral de Potencia (PSD) en representación polar permite cuantificar de manera independiente la severidad, la granularidad y la anisotropía del patrón \cite{Ong2012}.
-    \item \textbf{Sensibilidad Estructural:} Se ha demostrado que las variaciones en estas estadísticas permiten inferir propiedades de medios aleatorios discretos (DRM) incluso por debajo del límite de resolución del sistema óptico \cite{Almasian2017}.
-\end{itemize}
+\subsubsection{Detección de cambios en teledetección}
+\textit{[Pendiente por redactar. De las técnicas clásicas al aprendizaje profundo \cite{khelifi2020deep}, con la frontera actual en la detección semántica y de vocabulario abierto \cite{zhu2025semanticcd}.]}
 
-\subsubsection{Haces de Mathieu-Gauss: Generación y Resiliencia}
-El uso de haces estructurados es el núcleo de la fase experimental de este trabajo.
-\begin{itemize}
-    \item \textbf{Implementación con SLM:} La generación de haces de Mathieu-Gauss (MG) de cualquier orden y elipticidad mediante Moduladores Espaciales de Luz (SLM) de solo fase representa la técnica más eficiente para el control de estos campos \cite{hernandez2010experimental}.
-    \item \textbf{Robustez en Coherencia Parcial:} Un hito reciente de 2025 demuestra que los haces MG mantienen sus características estructurales en la función de correlación cruzada (CCF), incluso cuando su intensidad se degrada por baja coherencia espacial o medios no homogéneos \cite{akbarpour2025partially}. Esta resiliencia justifica su elección para este sistema de metrología.
-\end{itemize}
+\subsubsection{Segmentación y reconocimiento de vocabulario abierto}
+\textit{[Pendiente por redactar. Auge de los modelos fundacionales de segmentación \cite{kirillov2023sam} y de visión-lenguaje \cite{radford2021clip}, y su combinación para segmentar sin clases fijas \cite{kombol2025trainingfree}.]}
 
-\subsubsection{Precisión en el Análisis Espaciotemporal}
-Dado que este trabajo de grado desarrolla un sistema computacional de procesamiento, la precisión algorítmica es prioritaria.
-\begin{itemize}
-    \item \textbf{Modelado de Dinámicas:} Las inconsistencias en la medición de muestras con movilidad lenta se resuelven mediante modelos que incorporan la correlación temporal entre píxeles adyacentes, asegurando que la caracterización sea precisa en diversos regímenes dinámicos \cite{JuarezRamirez2025}.
-\end{itemize}
+\subsubsection{Modelos fundacionales y zero-shot en imágenes hiperespectrales}
+\textit{[Pendiente por redactar. Llegada de un modelo fundacional propio del dominio \cite{wang2024hypersigma} y primeros enfoques zero-shot \cite{pang2025special} y de descripción \cite{das2025hypercap}.]}
 
-\subsubsection{Instrumentación Virtual y Compensación Digital}
-Para instrumentación virtual, es usual integrar el procesamiento en una interfaz gráfica (UI) 
-\begin{itemize}
-    \item \textbf{Reproducibilidad y Software:} El estado del arte en software científico valida el uso de lenguajes como Python para crear interfaces que garanticen la reproducibilidad y la gestión de metadatos experimentales \cite{beg2017}.
-    \item \textbf{Compensación del Sensor:} Es imperativo considerar que el tamaño del píxel del sensor actúa como un filtro de frecuencias espaciales. Este fenómeno, descrito en la teoría de holografía digital, debe ser compensado numéricamente para obtener una caracterización fiel del moteado \cite{Kelly2013}.
-\end{itemize}
+\subsubsection{Vacío de investigación}
+\textit{[Pendiente por redactar. El vocabulario abierto y el zero-shot están resueltos en imágenes RGB y empiezan en teledetección, pero no se han llevado a la detección de cambios sobre imágenes hiperespectrales bitemporales. Ese es el aporte de este trabajo.]}
 
     \newpage
 % ================= METODOLOGÍA =================
