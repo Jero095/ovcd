@@ -132,11 +132,34 @@ cambios.
 ### 2.7 Vocabulario abierto
 El enfoque de vocabulario abierto permite etiquetar regiones de una imagen con cualquier
 concepto expresable en lenguaje natural, en lugar de restringirse a un conjunto cerrado y
-predefinido de clases. Esto se logra gracias a modelos que alinean el espacio visual con
-el espacio del lenguaje, de modo que la etiqueta se decide por similitud entre la región y
-una descripción textual arbitraria [[kombol2025trainingfree]]. En teledetección, esta idea
-se ha comenzado a aplicar a la detección de cambios semánticos, superando la limitación de
-las clases fijas [[zhu2025semanticcd]].
+predefinido de clases.
+
+Para entender su ventaja conviene contrastarlo con el enfoque tradicional. Un clasificador
+clásico se entrena sobre un número fijo de categorías, por ejemplo agua, vegetación o
+edificación, y solo puede responder con una de esas etiquetas aprendidas. Si aparece un
+concepto nuevo que no estaba en ese conjunto, el modelo no puede nombrarlo, y para
+incorporarlo hay que anotar datos nuevos y volver a entrenar la red por completo. El
+vocabulario queda congelado en el momento del entrenamiento.
+
+El vocabulario abierto cambia este funcionamiento. En lugar de una capa final con un número
+fijo de salidas, se emplean modelos que proyectan imágenes y texto a un mismo espacio de
+representación, de modo que la etiqueta se decide comparando la región con la descripción
+textual de cada categoría candidata [[radford2021clip]]. Las categorías ya no están fijadas
+en la red, sino que se entregan como texto en el momento de la consulta, y pueden cambiarse o
+ampliarse sin reentrenar nada [[kombol2025trainingfree]].
+
+La diferencia se entiende bien con una analogía. El enfoque tradicional es como un examen de
+opción múltiple, donde las respuestas posibles están impresas de antemano y solo se puede
+marcar una de ellas. El vocabulario abierto, en cambio, funciona como un prompt: uno mismo
+escribe en lenguaje libre las opciones que quiere buscar y el modelo decide cuál encaja mejor
+con la imagen. Igual que a un modelo de lenguaje se le escribe cualquier pregunta en vez de
+elegir de un menú de botones, aquí se le entrega al sistema cualquier lista de etiquetas en
+texto. En nuestro caso esto es literal: el vocabulario es una lista de indicaciones textuales
+que recibe CLIP, y ampliarla o cambiarla es tan sencillo como editar esa lista, sin tocar los
+pesos del modelo.
+
+En teledetección, esta idea se ha comenzado a aplicar a la detección de cambios semánticos,
+superando la limitación de las clases fijas [[zhu2025semanticcd]].
 
 ### 2.8 Modelos de visión-lenguaje y descripción de imágenes
 Los modelos de visión-lenguaje aprenden una representación conjunta de imágenes y texto a
