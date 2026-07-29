@@ -90,14 +90,15 @@ entrenado en imágenes RGB se traslada al dominio hiperespectral sin reentrenarl
 
 ### 2.4 Transformers y Vision Transformers
 El transformador es una arquitectura de red neuronal basada por completo en el mecanismo
-de atención, que pondera la relación entre todos los elementos de una secuencia sin
-recurrir a convoluciones ni a recurrencia [[vaswani2017attention]]. El Vision Transformer
-traslada esta idea a las imágenes: divide la imagen en parches, los trata como una
-secuencia de fichas y aplica atención sobre ellos, alcanzando un desempeño competitivo en
-reconocimiento visual cuando se preentrena con grandes volúmenes de datos
-[[dosovitskiy2021vit]]. Esta arquitectura es la base común de los modelos empleados en el
-sistema, tanto para el análisis hiperespectral como para la segmentación y la alineación
-entre imagen y texto.
+de atención, que en lugar de procesar la información de forma local, como hace una
+convolución, pondera de manera explícita la relación entre todos los elementos de una
+secuencia y aprende cuáles son relevantes entre sí [[vaswani2017attention]]. El Vision
+Transformer traslada esta idea a las imágenes: divide la imagen en parches de tamaño fijo,
+proyecta cada parche a un vector, los trata como una secuencia de fichas y aplica atención
+sobre ellos. Su ventaja frente a las redes convolucionales se manifiesta al preentrenarse
+con grandes volúmenes de datos, régimen en el que aprende representaciones muy
+transferibles, y por eso se ha convertido en la arquitectura base de los modelos
+fundacionales de visión [[dosovitskiy2021vit]].
 
 ### 2.5 Modelos fundacionales
 Un modelo fundacional es un modelo de gran escala preentrenado sobre cantidades masivas
@@ -107,6 +108,15 @@ modelo fundacional con más de mil millones de parámetros, preentrenado sobre u
 extenso de imágenes hiperespectrales, capaz de extraer características espaciales y
 espectrales transferibles a tareas como clasificación, detección de cambios y
 segmentación [[wang2024hypersigma]].
+
+En los últimos años, los modelos fundacionales se han convertido en una herramienta central
+de la investigación en visión por computadora y teledetección. Su capacidad de transferir el
+conocimiento adquirido en el preentrenamiento a tareas nuevas, con pocos o ningún ejemplo
+etiquetado, ha impulsado su adopción en problemas donde los datos anotados son escasos o
+costosos, como ocurre con las imágenes hiperespectrales. Esta tendencia se refleja en la
+aparición de modelos fundacionales propios del dominio [[wang2024hypersigma]], en enfoques de
+clasificación sin entrenamiento específico [[pang2025special]] y en la detección de cambios
+semánticos apoyada en estos modelos [[zhu2025semanticcd]].
 
 ### 2.6 Aprendizaje zero-shot
 El aprendizaje zero-shot se refiere a la capacidad de un modelo para resolver una tarea o
@@ -159,7 +169,18 @@ métricas son el estándar en la revisión de métodos de detección de cambios 
 aprendizaje profundo [[khelifi2020deep]].
 
 ### 2.11 Modelos y datos del sistema
-Esta subsección reúne, ya como tecnología concreta, las piezas del sistema:
+Las tres piezas centrales del pipeline comparten el mismo esqueleto arquitectónico, el
+Vision Transformer. En la extracción de características, HyperSIGMA procesa cada imagen con
+un codificador de tipo Vision Transformer espacial, en su variante base, que divide el cubo
+en parches y produce mapas de características densos a partir de los cuales se calcula el
+mapa de cambio [[wang2024hypersigma]]. En la segmentación, Segment Anything delimita las
+regiones con un codificador de imagen Vision Transformer de gran tamaño [[kirillov2023sam]].
+Y en el etiquetado, CLIP asigna las etiquetas de vocabulario abierto mediante un codificador
+visual Vision Transformer alineado con el texto [[radford2021clip]]. Así, el mismo principio
+de atención sobre parches recorre la detección de características, la segmentación y el
+etiquetado, lo que da coherencia arquitectónica a todo el sistema.
+
+A continuación se reúnen, ya como tecnología concreta, las piezas del sistema:
 
 - **HyperSIGMA** — modelo fundacional hiperespectral que extrae las representaciones profundas de cada imagen [[wang2024hypersigma]].
 - **Segment Anything** — modelo de segmentación promptable que convierte las regiones de cambio en máscaras precisas a partir de indicaciones espaciales [[kirillov2023sam]].
