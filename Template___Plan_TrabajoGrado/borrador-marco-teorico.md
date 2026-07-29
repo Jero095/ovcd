@@ -100,6 +100,16 @@ con grandes volúmenes de datos, régimen en el que aprende representaciones muy
 transferibles, y por eso se ha convertido en la arquitectura base de los modelos
 fundacionales de visión [[dosovitskiy2021vit]].
 
+Formalmente, la atención de producto punto escalado calcula, a partir de las matrices de
+consultas $Q$, claves $K$ y valores $V$,
+
+$$\operatorname{Attention}(Q,K,V)=\operatorname{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V,$$
+
+donde $d_k$ es la dimensión de las claves y el factor $\sqrt{d_k}$ evita que el producto
+crezca demasiado y sature la función softmax. Cada elemento de la secuencia queda así
+representado como una combinación ponderada de los demás, con pesos que expresan su
+relevancia mutua [[vaswani2017attention]].
+
 ### 2.5 Modelos fundacionales
 Un modelo fundacional es un modelo de gran escala preentrenado sobre cantidades masivas
 de datos, diseñado para servir como base reutilizable en múltiples tareas posteriores sin
@@ -117,6 +127,31 @@ costosos, como ocurre con las imágenes hiperespectrales. Esta tendencia se refl
 aparición de modelos fundacionales propios del dominio [[wang2024hypersigma]], en enfoques de
 clasificación sin entrenamiento específico [[pang2025special]] y en la detección de cambios
 semánticos apoyada en estos modelos [[zhu2025semanticcd]].
+
+#### 2.5.1 Arquitectura de HyperSIGMA: SpatViT y atención por muestreo disperso
+La extracción de características de este trabajo recae en SpatViT, la subred espacial de
+HyperSIGMA. Es un Vision Transformer que divide la imagen hiperespectral en parches no
+solapados y los procesa con atención; en la variante base que se emplea aquí, produce un mapa
+de características denso de dimensión de *embedding* 768 a un dieciseisavo de la resolución
+espacial de entrada [[wang2024hypersigma]].
+
+El problema es que la autoatención completa tiene un costo cuadrático en el número de fichas,
+y las imágenes hiperespectrales presentan una fuerte redundancia espacial y espectral, por lo
+que atender de forma uniforme a todas las posiciones es ineficiente. SpatViT lo resuelve con
+la atención por muestreo disperso, o *sparse sampling attention*. En lugar de comparar cada
+consulta con todas las claves, cada consulta $\mathbf{q}$ predice $N_p$ desplazamientos de
+muestreo mediante una proyección lineal aprendida $W_p$, y las claves y los valores se
+muestrean únicamente en esas posiciones desplazadas mediante interpolación bilineal, formando
+los conjuntos reducidos $K'$ y $V'$. La atención se calcula entonces solo sobre ese conjunto
+disperso:
+
+$$\operatorname{SSA}(Q,K',V')=\operatorname{softmax}\!\left(\frac{Q\,K'^{\top}}{\sqrt{D'}}\right)V',$$
+
+donde $D'$ es la dimensión de las claves. Así, cada consulta aprende qué regiones son
+relevantes en vez de recorrerlas todas, lo que captura contexto diverso de largo alcance con
+un costo mucho menor que la autoatención completa [[wang2024hypersigma]]. En el pipeline,
+SpatViT con esta atención es el codificador que genera las representaciones de la imagen
+inicial y la final, sobre las que se calcula el mapa de cambio por similitud coseno.
 
 ### 2.6 Aprendizaje zero-shot
 El aprendizaje zero-shot se refiere a la capacidad de un modelo para resolver una tarea o
@@ -195,42 +230,58 @@ genera una frase en lenguaje natural que caracteriza la región con más riqueza
 etiqueta [[li2022blip]] [[das2025hypercap]].
 
 ### 2.9 Representaciones vectoriales y similitud coseno
-Una idea central del aprendizaje profundo es que una buena representación de los datos, una
-que capture los factores de variación relevantes, es lo que hace posible resolver tareas
-posteriores con facilidad [[bengio2013representation]]. Bajo este principio, los modelos
-representan cada imagen o región mediante un vector de características, conocido como
-*embedding*, que condensa su contenido semántico en un espacio de alta dimensión, de modo
-que dos entradas parecidas quedan cerca en ese espacio y dos distintas quedan lejos.
+El aprendizaje profundo parte de que el desempeño en una tarea depende sobre todo de la
+calidad de la representación de los datos [[bengio2013representation]]. Un modelo profundo
+transforma cada imagen o región en un vector de características o *embedding*
+$\mathbf{v}\in\mathbb{R}^{d}$, con $d$ del orden de cientos, en un espacio donde la proximidad
+entre vectores corresponde a similitud semántica.
 
-La comparación entre dos representaciones se realiza con la similitud coseno, que mide el
-coseno del ángulo entre ambos vectores y arroja un valor cercano a uno cuando apuntan en la
-misma dirección y cercano a cero cuando son ortogonales. Se prefiere sobre la distancia
-euclidiana porque atiende a la orientación del vector, asociada al contenido semántico, y no
-a su magnitud, lo que la hace robusta frente a diferencias de escala o iluminación.
+La comparación entre dos *embeddings* $\mathbf{u}$ y $\mathbf{v}$ usa la similitud coseno:
 
-En este trabajo, la similitud coseno es el mecanismo que convierte las representaciones en un
-mapa de cambio. HyperSIGMA extrae un vector por posición espacial en la imagen inicial y en
-la final, y para cada posición se calcula la similitud coseno entre ambos vectores: donde la
-similitud es baja, el contenido cambió, y donde es alta, se mantuvo [[wang2024hypersigma]].
-Esa misma operación reaparece en el etiquetado, cuando se compara la representación de una
-región con la de cada descripción textual candidata.
+$$\operatorname{sim}(\mathbf{u},\mathbf{v})=\frac{\mathbf{u}\cdot\mathbf{v}}{\lVert\mathbf{u}\rVert\,\lVert\mathbf{v}\rVert}=\frac{\sum_{i=1}^{d}u_i v_i}{\sqrt{\sum_{i=1}^{d}u_i^{2}}\,\sqrt{\sum_{i=1}^{d}v_i^{2}}}\in[-1,1].$$
+
+La normalización por las magnitudes $\lVert\mathbf{u}\rVert$ y $\lVert\mathbf{v}\rVert$ elimina
+la escala y conserva solo la orientación, por lo que la medida es insensible a diferencias de
+brillo o ganancia entre las dos capturas.
+
+HyperSIGMA entrega un *embedding* por posición del mapa de características
+[[wang2024hypersigma]]. Para cada posición $p$, con vectores $\mathbf{e}_1(p)$ y
+$\mathbf{e}_2(p)$ de las imágenes inicial y final, el mapa de cambio es
+
+$$C(p)=1-\operatorname{sim}\!\big(\mathbf{e}_1(p),\mathbf{e}_2(p)\big),$$
+
+donde un valor alto indica cambio y uno bajo permanencia. En la implementación $C$ se
+interpola de forma bilineal al tamaño original, se renormaliza a $[0,1]$ y se binariza con el
+método de Otsu para delimitar las regiones de cambio. La misma similitud coseno rige el
+etiquetado, al comparar el *embedding* de una región con el de cada descripción textual
+candidata.
 
 ### 2.10 Métricas de evaluación
 La evaluación de la detección de cambios se plantea como una comparación píxel a píxel entre
-el resultado del sistema y una verdad de terreno, de la que surgen cuatro casos: aciertos
-positivos cuando se detecta un cambio real, aciertos negativos cuando se identifica
-correctamente una zona sin cambio, falsos positivos cuando se señala un cambio inexistente y
-falsos negativos cuando se pasa por alto un cambio real. Sobre estos conteos se definen las
-métricas de desempeño.
+el resultado del sistema y una verdad de terreno, de la que surgen cuatro conteos: verdaderos
+positivos $VP$ cuando se detecta un cambio real, verdaderos negativos $VN$ cuando se identifica
+correctamente una zona sin cambio, falsos positivos $FP$ cuando se señala un cambio inexistente
+y falsos negativos $FN$ cuando se pasa por alto un cambio real. Sobre estos conteos se definen
+las métricas de desempeño.
 
-La precisión mide qué proporción de los cambios detectados son correctos y penaliza los
-falsos positivos, mientras que la exhaustividad mide qué proporción de los cambios reales se
-detectaron y penaliza los falsos negativos. Como suele existir una tensión entre ambas, el
-puntaje F1 las combina en un único valor mediante su media armónica, que solo es alta cuando
-las dos lo son. La intersección sobre unión complementa lo anterior al evaluar el solapamiento
-espacial entre la región detectada y la real, dividiendo el área común entre el área total que
-cubren juntas. Estas métricas son el estándar en la revisión de métodos de detección de
-cambios basados en aprendizaje profundo [[khelifi2020deep]].
+La precisión $P$ mide qué proporción de los cambios detectados son correctos y penaliza los
+falsos positivos, mientras que la exhaustividad $R$ mide qué proporción de los cambios reales
+se detectaron y penaliza los falsos negativos:
+
+$$P=\frac{VP}{VP+FP},\qquad R=\frac{VP}{VP+FN}.$$
+
+Como suele existir una tensión entre ambas, el puntaje F1 las combina en un único valor
+mediante su media armónica, que solo es alta cuando las dos lo son:
+
+$$F_1=\frac{2\,P\,R}{P+R}=\frac{2\,VP}{2\,VP+FP+FN}.$$
+
+La intersección sobre unión evalúa el solapamiento espacial entre la región detectada y la
+real, dividiendo el área común entre el área total que cubren juntas:
+
+$$\mathrm{IoU}=\frac{VP}{VP+FP+FN}.$$
+
+Estas métricas son el estándar en la revisión de métodos de detección de cambios basados en
+aprendizaje profundo [[khelifi2020deep]].
 
 En este trabajo, estas métricas son la base de la validación cuantitativa del sistema. La
 máscara de cambio producida por el pipeline se contrasta con la verdad de terreno de un
@@ -344,3 +395,18 @@ marco de referencia.
 2. Una vez aprobadas, pasar la prosa al esqueleto ya insertado en `main.tex`, sección
    *Marco de referencia*.
 3. Redactar el estado del arte de la sección 3 como argumento hilado, no como lista.
+
+## 6. Figuras a incluir cuando se redacte el LaTeX
+
+Estas figuras deben incorporarse al documento cuando se pase el marco al LaTeX. No van en el
+borrador markdown, pero quedan registradas aquí para no olvidarlas.
+
+| Figura | Qué es | De dónde sale | Dónde va |
+|---|---|---|---|
+| Firmas espectrales | Gráfica de reflectancia frente a banda para varios materiales de la escena | Se genera de los datos de prueba extrayendo el espectro de píxeles representativos | Sección 2.1, Imágenes hiperespectrales |
+| Representación del hipercubo | Esquema del cubo con dos ejes espaciales y un eje espectral | Ilustración propia, no copiada de otra fuente | Sección 2.1, Imágenes hiperespectrales |
+| Par bitemporal de prueba | Composiciones RGB de las dos capturas de la misma escena | `hyperglobal/imgs/barbara/barbara_2013.mat` y `barbara_2014.mat`, renderizadas con la etapa `rgb` del pipeline | Sección 2.2, Detección de cambios, o Metodología |
+
+Notas: las tres figuras hay que **generarlas**; la de firmas espectrales y la del par
+bitemporal salen de los datos de prueba, la del hipercubo es un diagrama. No copiar figuras
+con derechos de autor de otras publicaciones.
