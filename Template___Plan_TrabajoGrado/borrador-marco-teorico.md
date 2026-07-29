@@ -163,33 +163,79 @@ superando la limitación de las clases fijas [[zhu2025semanticcd]].
 
 ### 2.8 Modelos de visión-lenguaje y descripción de imágenes
 Los modelos de visión-lenguaje aprenden una representación conjunta de imágenes y texto a
-partir de grandes colecciones de pares imagen y descripción. CLIP entrena dos codificadores,
-uno visual y uno textual, para proyectar ambas modalidades a un espacio común donde la
-correspondencia se mide por similitud, lo que habilita la clasificación por texto libre y
-el etiquetado de vocabulario abierto [[radford2021clip]]. La descripción de imágenes, o
-generación de subtítulos, va un paso más allá y produce frases en lenguaje natural que
-resumen el contenido visual; BLIP es un modelo que unifica comprensión y generación para
-esta tarea [[li2022blip]]. Para el dominio hiperespectral existe HyperCap, un conjunto de
-datos y punto de referencia orientado a la descripción de coberturas terrestres a partir
-de imágenes hiperespectrales [[das2025hypercap]].
+partir de grandes colecciones de pares imagen y descripción, con el fin de resolver tareas
+visuales guiadas por lenguaje sin entrenar un modelo distinto para cada una
+[[zhang2024vlm]]. CLIP es el exponente que se emplea en este trabajo: entrena dos
+codificadores, uno visual y uno textual, para proyectar ambas modalidades a un espacio común
+donde la correspondencia se mide por similitud, lo que habilita la clasificación por texto
+libre y el etiquetado de vocabulario abierto [[radford2021clip]].
+
+La descripción de imágenes, o generación de subtítulos, va un paso más allá de la
+clasificación y produce frases en lenguaje natural que resumen el contenido visual. Los
+primeros modelos neuronales de esta tarea combinaban un codificador convolucional con un
+decodificador recurrente que generaba la frase palabra por palabra; en palabras de sus
+autores, un modelo que "can be used to generate natural sentences describing an image"
+[[vinyals2015show]]. La línea actual la dominan los modelos de visión-lenguaje preentrenados
+a gran escala, como BLIP, que unifican en una sola arquitectura la comprensión y la
+generación de lenguaje a partir de imágenes [[li2022blip]].
+
+En teledetección, la descripción de imágenes tiene una trayectoria propia. La construcción
+de conjuntos de datos específicos, como RSICD, con cerca de once mil imágenes de teledetección
+y varias descripciones por imagen, permitió entrenar y evaluar modelos de descripción
+adaptados a las escenas aéreas y satelitales [[lu2017rsicd]]. Sin embargo, ese avance se
+concentró en imágenes ópticas de tres canales. El traslado al dominio hiperespectral es mucho
+más reciente: HyperCap es el primer conjunto de datos y punto de referencia orientado a la
+descripción de coberturas terrestres a partir de imágenes hiperespectrales, y abre la puerta
+a aplicar modelos de visión-lenguaje sobre el cubo espectral completo [[das2025hypercap]].
+
+En nuestro sistema, estos modelos ocupan las dos últimas etapas semánticas del pipeline. CLIP
+asigna a cada región de cambio una etiqueta de vocabulario abierto por similitud entre imagen
+y texto [[radford2021clip]], y un modelo de descripción de tipo BLIP, adaptado sobre HyperCap,
+genera una frase en lenguaje natural que caracteriza la región con más riqueza que una sola
+etiqueta [[li2022blip]] [[das2025hypercap]].
 
 ### 2.9 Representaciones vectoriales y similitud coseno
-Los modelos profundos representan cada imagen o región mediante un vector de características,
-conocido como *embedding*, que condensa su contenido semántico en un espacio de alta
-dimensión. La comparación entre dos representaciones se realiza con la similitud coseno,
-que mide el ángulo entre ambos vectores y arroja un valor alto cuando apuntan en la misma
-dirección. En este trabajo, el mapa de cambio se construye calculando la similitud coseno
-entre las representaciones de la imagen inicial y la final extraídas por el modelo
-fundacional: donde la similitud es baja, hay cambio [[wang2024hypersigma]].
+Una idea central del aprendizaje profundo es que una buena representación de los datos, una
+que capture los factores de variación relevantes, es lo que hace posible resolver tareas
+posteriores con facilidad [[bengio2013representation]]. Bajo este principio, los modelos
+representan cada imagen o región mediante un vector de características, conocido como
+*embedding*, que condensa su contenido semántico en un espacio de alta dimensión, de modo
+que dos entradas parecidas quedan cerca en ese espacio y dos distintas quedan lejos.
+
+La comparación entre dos representaciones se realiza con la similitud coseno, que mide el
+coseno del ángulo entre ambos vectores y arroja un valor cercano a uno cuando apuntan en la
+misma dirección y cercano a cero cuando son ortogonales. Se prefiere sobre la distancia
+euclidiana porque atiende a la orientación del vector, asociada al contenido semántico, y no
+a su magnitud, lo que la hace robusta frente a diferencias de escala o iluminación.
+
+En este trabajo, la similitud coseno es el mecanismo que convierte las representaciones en un
+mapa de cambio. HyperSIGMA extrae un vector por posición espacial en la imagen inicial y en
+la final, y para cada posición se calcula la similitud coseno entre ambos vectores: donde la
+similitud es baja, el contenido cambió, y donde es alta, se mantuvo [[wang2024hypersigma]].
+Esa misma operación reaparece en el etiquetado, cuando se compara la representación de una
+región con la de cada descripción textual candidata.
 
 ### 2.10 Métricas de evaluación
-Para valorar el desempeño de la detección de cambios se emplean métricas derivadas de la
-comparación con una verdad de terreno. La precisión mide qué proporción de los cambios
-detectados son correctos, la exhaustividad mide qué proporción de los cambios reales fueron
-detectados, y el puntaje F1 combina ambas en un único valor mediante su media armónica. La
-intersección sobre unión evalúa el solapamiento entre la región detectada y la real. Estas
-métricas son el estándar en la revisión de métodos de detección de cambios basados en
-aprendizaje profundo [[khelifi2020deep]].
+La evaluación de la detección de cambios se plantea como una comparación píxel a píxel entre
+el resultado del sistema y una verdad de terreno, de la que surgen cuatro casos: aciertos
+positivos cuando se detecta un cambio real, aciertos negativos cuando se identifica
+correctamente una zona sin cambio, falsos positivos cuando se señala un cambio inexistente y
+falsos negativos cuando se pasa por alto un cambio real. Sobre estos conteos se definen las
+métricas de desempeño.
+
+La precisión mide qué proporción de los cambios detectados son correctos y penaliza los
+falsos positivos, mientras que la exhaustividad mide qué proporción de los cambios reales se
+detectaron y penaliza los falsos negativos. Como suele existir una tensión entre ambas, el
+puntaje F1 las combina en un único valor mediante su media armónica, que solo es alta cuando
+las dos lo son. La intersección sobre unión complementa lo anterior al evaluar el solapamiento
+espacial entre la región detectada y la real, dividiendo el área común entre el área total que
+cubren juntas. Estas métricas son el estándar en la revisión de métodos de detección de
+cambios basados en aprendizaje profundo [[khelifi2020deep]].
+
+En este trabajo, estas métricas son la base de la validación cuantitativa del sistema. La
+máscara de cambio producida por el pipeline se contrasta con la verdad de terreno de un
+conjunto hiperespectral bitemporal de referencia, y los valores de precisión, exhaustividad y
+puntaje F1 permiten situar el desempeño frente a métodos existentes.
 
 ### 2.11 Modelos y datos del sistema
 Las tres piezas centrales del pipeline comparten el mismo esqueleto arquitectónico, el
@@ -205,11 +251,11 @@ etiquetado, lo que da coherencia arquitectónica a todo el sistema.
 
 A continuación se reúnen, ya como tecnología concreta, las piezas del sistema:
 
-- **HyperSIGMA** — modelo fundacional hiperespectral que extrae las representaciones profundas de cada imagen [[wang2024hypersigma]].
-- **Segment Anything** — modelo de segmentación promptable que convierte las regiones de cambio en máscaras precisas a partir de indicaciones espaciales [[kirillov2023sam]].
-- **CLIP** — modelo de visión-lenguaje que asigna etiquetas de vocabulario abierto por similitud entre imagen y texto [[radford2021clip]].
-- **BLIP** — modelo de descripción de imágenes que genera frases en lenguaje natural [[li2022blip]].
-- **HyperCap** — conjunto de datos y punto de referencia para la descripción de imágenes hiperespectrales, base del módulo de captioning [[das2025hypercap]].
+- **HyperSIGMA** — modelo fundacional hiperespectral basado en Vision Transformer, escalable a más de mil millones de parámetros y preentrenado sobre un conjunto masivo de imágenes hiperespectrales. Extrae las representaciones profundas de cada imagen, sobre las que se calcula el mapa de cambio [[wang2024hypersigma]].
+- **Segment Anything** — modelo fundacional de segmentación promptable con codificador Vision Transformer de gran tamaño. Convierte las regiones de cambio en máscaras precisas a nivel de píxel a partir de indicaciones espaciales [[kirillov2023sam]].
+- **CLIP** — modelo de visión-lenguaje que alinea imagen y texto en un espacio común. Asigna a cada región una etiqueta de vocabulario abierto por similitud entre la imagen y las descripciones textuales candidatas [[radford2021clip]].
+- **BLIP** — modelo de visión-lenguaje que unifica comprensión y generación. Genera la descripción en lenguaje natural de cada región, adaptado sobre datos hiperespectrales [[li2022blip]].
+- **HyperCap** — primer conjunto de datos y punto de referencia para la descripción de imágenes hiperespectrales, con anotaciones textuales a nivel de píxel. Sirve de base de entrenamiento y evaluación del módulo de descripción [[das2025hypercap]].
 
 ---
 
@@ -222,6 +268,47 @@ trabajo. Se propone organizarlo en tres ejes y un cierre:
 2. **Segmentación y reconocimiento de vocabulario abierto** — el auge de los modelos fundacionales de segmentación [[kirillov2023sam]] y de visión-lenguaje [[radford2021clip]], y su combinación para segmentar sin clases fijas [[kombol2025trainingfree]].
 3. **Modelos fundacionales y zero-shot en imágenes hiperespectrales** — la llegada de un modelo fundacional propio del dominio [[wang2024hypersigma]] y los primeros enfoques zero-shot [[pang2025special]] y de descripción [[das2025hypercap]].
 4. **Vacío de investigación** — el vocabulario abierto y el zero-shot están resueltos en imágenes RGB y empiezan en teledetección, pero nadie los ha llevado a la detección de cambios sobre imágenes hiperespectrales bitemporales. Ese es el aporte de este trabajo.
+
+### 3.5 Los modelos empleados en el sistema
+El sistema no propone modelos nuevos, sino que combina modelos fundacionales de referencia,
+cada uno líder en su tarea. A continuación se describe qué hace cada uno, para qué se usa hoy,
+quién lo desarrolla y qué papel cumple en el pipeline.
+
+**HyperSIGMA.** Es un modelo fundacional para imágenes hiperespectrales, basado en Vision
+Transformer y escalable a más de mil millones de parámetros. Lo desarrolla un equipo de
+investigación encabezado por Wang y colaboradores de la Universidad de Wuhan junto con otras
+instituciones, y se preentrena sobre un conjunto masivo de imágenes hiperespectrales. Se usa
+como base común para tareas de interpretación hiperespectral, como clasificación de coberturas,
+detección de cambios y segmentación, que se resuelven reutilizando sus representaciones. En el
+pipeline extrae las características de cada imagen, a partir de las cuales se construye el mapa
+de cambio [[wang2024hypersigma]].
+
+**Segment Anything.** Es un modelo fundacional de segmentación promptable, capaz de delimitar
+cualquier objeto de una imagen a partir de indicaciones espaciales como puntos o recuadros. Lo
+desarrolla Meta AI. Se usa como bloque de segmentación de propósito general en edición de
+imágenes, anotación de datos y numerosos sistemas de visión, y cada vez más como componente en
+teledetección. En el pipeline recibe la región de cambio y produce su máscara precisa a nivel
+de píxel [[kirillov2023sam]].
+
+**CLIP.** Es un modelo de visión-lenguaje que proyecta imágenes y texto a un espacio común
+donde la correspondencia se mide por similitud. Lo desarrolla OpenAI. Se usa para clasificación
+zero-shot, recuperación entre imagen y texto y como base de sistemas de vocabulario abierto y
+de generación de imágenes. En el pipeline asigna a cada región de cambio una etiqueta de
+vocabulario abierto por similitud entre la imagen y las descripciones candidatas
+[[radford2021clip]].
+
+**BLIP.** Es un modelo de visión-lenguaje que unifica la comprensión y la generación de
+lenguaje a partir de imágenes. Lo desarrolla Salesforce Research. Se usa para descripción de
+imágenes, respuesta a preguntas visuales y recuperación multimodal. En el pipeline genera la
+descripción en lenguaje natural de cada región de cambio, adaptado sobre datos hiperespectrales
+[[li2022blip]].
+
+**HyperCap.** No es un modelo sino un conjunto de datos, el primero orientado a la descripción
+de imágenes hiperespectrales, con anotaciones textuales a nivel de píxel sobre varios conjuntos
+de referencia. Lo desarrolla un equipo encabezado por Das y colaboradores, con participación de
+grupos de investigación en teledetección. Se usa para entrenar y evaluar modelos de
+visión-lenguaje en el dominio hiperespectral. En el pipeline es la base de entrenamiento del
+módulo de descripción [[das2025hypercap]].
 
 ---
 
@@ -237,6 +324,10 @@ marco de referencia.
 | `kirillov2023sam` | Kirillov et al., *Segment Anything*, ICCV 2023 | arxiv.org/abs/2304.02643 | Segmentación promptable a nivel de píxel a partir de indicaciones espaciales, sin reentrenamiento. |
 | `vaswani2017attention` | Vaswani et al., *Attention Is All You Need*, NeurIPS 2017 | arxiv.org/abs/1706.03762 | Definición de la arquitectura transformador y del mecanismo de atención. |
 | `dosovitskiy2021vit` | Dosovitskiy et al., *An Image Is Worth 16x16 Words*, ICLR 2021 | arxiv.org/abs/2010.11929 | Vision Transformer: tratar la imagen como secuencia de parches; arquitectura base de los modelos del sistema. |
+| `zhang2024vlm` | Zhang et al., *Vision-Language Models for Vision Tasks: A Survey*, IEEE TPAMI 46(8):5625–5644, 2024 | doi.org/10.1109/TPAMI.2024.3369699 | Definición de modelos de visión-lenguaje; representación conjunta imagen-texto para tareas guiadas por lenguaje. |
+| `vinyals2015show` | Vinyals et al., *Show and Tell: A Neural Image Caption Generator*, CVPR 2015 | cv-foundation.org — Vinyals_Show_and_Tell_2015_CVPR | Origen neuronal de la descripción de imágenes: codificador convolucional más decodificador recurrente. |
+| `lu2017rsicd` | Lu et al., *Exploring Models and Data for Remote Sensing Image Caption Generation*, IEEE TGRS 56(4):2183–2195, 2018 | arxiv.org/abs/1712.07835 | Descripción de imágenes en teledetección; conjunto RSICD; estado del arte previo al dominio hiperespectral. |
+| `bengio2013representation` | Bengio, Courville & Vincent, *Representation Learning: A Review and New Perspectives*, IEEE TPAMI 35(8):1798–1828, 2013 | doi.org/10.1109/TPAMI.2013.50 | Fundamento del aprendizaje de representaciones; los *embeddings* como espacio semántico de las tareas posteriores. |
 | `wang2024hypersigma` | Wang et al., *HyperSIGMA: Hyperspectral Intelligence Comprehension Foundation Model*, IEEE TPAMI 2025 | arxiv.org/abs/2406.11519 | Definición de modelo fundacional hiperespectral; extracción de características; base del mapa de cambio por similitud. |
 | `radford2021clip` | Radford et al., *Learning Transferable Visual Models From Natural Language Supervision*, ICML 2021 | arxiv.org/abs/2103.00020 | Modelo de visión-lenguaje; espacio común imagen-texto; clasificación zero-shot y etiquetado por texto libre. |
 | `pang2025special` | Pang et al., *SPECIAL: Zero-shot Hyperspectral Image Classification With CLIP*, arXiv 2025 | arxiv.org/abs/2501.16222 | Aprendizaje zero-shot aplicado a la clasificación de coberturas hiperespectrales. |
