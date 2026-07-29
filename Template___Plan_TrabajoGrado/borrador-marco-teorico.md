@@ -63,10 +63,30 @@ exactamente dos capturas, una en el instante inicial y otra en el instante final
 La segmentación es la tarea de asignar a cada píxel de una imagen una etiqueta que lo
 agrupa en una región coherente, delimitando objetos o zonas con precisión a nivel de
 píxel. A diferencia de la clasificación, que asigna una única categoría a toda la imagen,
-la segmentación produce máscaras que separan cada elemento de la escena. Los modelos
-recientes de segmentación promptable generan estas máscaras a partir de indicaciones
-espaciales como puntos o recuadros, sin necesidad de reentrenarse para cada dominio
-[[kirillov2023sam]].
+la segmentación produce máscaras que separan cada elemento de la escena.
+
+En cuanto a los modelos que existen, el enfoque tradicional se apoyó en redes
+convolucionales de tipo codificador y decodificador, como U-Net, Mask R-CNN o DeepLab,
+que se entrenan de forma supervisada para un conjunto fijo de clases y un dominio
+concreto. El paradigma actual son los modelos fundacionales de segmentación promptable,
+cuyo referente es Segment Anything, entrenado sobre un conjunto de datos masivo y capaz de
+generar máscaras precisas a partir de indicaciones espaciales como puntos o recuadros, sin
+necesidad de reentrenarse para cada dominio [[kirillov2023sam]]. Modelos posteriores como
+SAM 2 extienden esta idea a video, pero comparten el mismo principio de segmentación
+guiada por indicaciones.
+
+La aplicación de estos modelos a una imagen hiperespectral no es directa. Segment Anything
+está diseñado para imágenes naturales de tres canales y no puede recibir como entrada un
+cubo hiperespectral de cientos de bandas. En nuestro sistema se salva esta distancia
+proyectando el cubo alineado a una representación de tres canales, ya sea seleccionando las
+bandas más cercanas a las longitudes de onda del rojo, el verde y el azul, en torno a 660,
+550 y 470 nanómetros, o tomando las tres primeras componentes principales del cubo. Esa
+imagen de tres canales, que corresponde al estado final de la escena, es la que recibe
+Segment Anything. La segmentación no se ejecuta sobre toda la imagen de forma ciega, sino
+que se guía con indicaciones espaciales derivadas del mapa de cambio, y cada máscara
+resultante se interseca con la región de cambio para confinarla a lo que efectivamente se
+modificó [[kirillov2023sam]]. De este modo la precisión a nivel de píxel de un modelo
+entrenado en imágenes RGB se traslada al dominio hiperespectral sin reentrenarlo.
 
 ### 2.4 Transformers y Vision Transformers
 El transformador es una arquitectura de red neuronal basada por completo en el mecanismo
