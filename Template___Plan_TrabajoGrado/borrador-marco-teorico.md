@@ -310,56 +310,164 @@ A continuación se reúnen, ya como tecnología concreta, las piezas del sistema
 
 ---
 
-## 3. Estado del arte (borrador de ejes)
+## 3. Estado del arte
 
-El estado del arte no es una lista, es un argumento que termina en el vacío que llena este
-trabajo. Se propone organizarlo en tres ejes y un cierre:
+El estado del arte se organiza siguiendo el recorrido del pipeline. Para cada etapa se revisa
+cómo se resuelve hoy el problema, qué alternativas existen, y se justifica la herramienta
+elegida; al mencionar cada modelo se indica quién lo desarrolla. El sistema no propone modelos
+nuevos, sino que integra modelos fundacionales de referencia, cada uno líder en su tarea.
 
-1. **Detección de cambios en teledetección** — de las técnicas clásicas basadas en píxeles a los métodos de aprendizaje profundo [[khelifi2020deep]], con la frontera actual en la detección semántica y de vocabulario abierto [[zhu2025semanticcd]].
-2. **Segmentación y reconocimiento de vocabulario abierto** — el auge de los modelos fundacionales de segmentación [[kirillov2023sam]] y de visión-lenguaje [[radford2021clip]], y su combinación para segmentar sin clases fijas [[kombol2025trainingfree]].
-3. **Modelos fundacionales y zero-shot en imágenes hiperespectrales** — la llegada de un modelo fundacional propio del dominio [[wang2024hypersigma]] y los primeros enfoques zero-shot [[pang2025special]] y de descripción [[das2025hypercap]].
-4. **Vacío de investigación** — el vocabulario abierto y el zero-shot están resueltos en imágenes RGB y empiezan en teledetección, pero nadie los ha llevado a la detección de cambios sobre imágenes hiperespectrales bitemporales. Ese es el aporte de este trabajo.
+### 3.1 Imágenes hiperespectrales y su adquisición
+La imagen hiperespectral nace de la espectrometría de imagen, formulada por Goetz en 1985 como la adquisición simultánea de imágenes en muchas bandas espectrales
+contiguas para obtener, en cada píxel, un espectro completo con el que identificar los
+materiales de la superficie terrestre [[goetz1985imaging]]. Desde los primeros sensores
+aerotransportados, como AVIRIS del Jet Propulsion Laboratory de la NASA, la tecnología
+evoluciona hacia sensores satelitales como Hyperion del satélite EO-1, que amplían la cobertura
+y consolidan la disponibilidad de datos con cientos de bandas [[bhargava2024hyperspectral]].
 
-### 3.5 Los modelos empleados en el sistema
-El sistema no propone modelos nuevos, sino que combina modelos fundacionales de referencia,
-cada uno líder en su tarea. A continuación se describe qué hace cada uno, para qué se usa hoy,
-quién lo desarrolla y qué papel cumple en el pipeline.
+En cuanto al método de toma, la adquisición se realiza mayoritariamente por barrido: los
+sensores de empuje, o pushbroom, registran una línea espacial completa en todas las bandas a la
+vez, mientras que los de barrido por punto, o whiskbroom, recorren la escena punto a punto;
+existen además cámaras de instantánea que capturan todo el cubo de una vez a costa de
+resolución. En todos los casos hay un compromiso entre resolución espacial, resolución
+espectral y relación señal a ruido [[bhargava2024hyperspectral]]. En este trabajo los datos
+entran como pares bitemporales en formatos ENVI, MATLAB o GeoTIFF, y se reinterpolan a un
+espacio espectral de referencia, el del sensor Hyperion, que es el mismo con el que se
+preentrena el modelo fundacional que extrae las características.
 
-**HyperSIGMA.** Es un modelo fundacional para imágenes hiperespectrales, basado en Vision
-Transformer y escalable a más de mil millones de parámetros. Lo desarrolla un equipo de
-investigación encabezado por Wang y colaboradores de la Universidad de Wuhan junto con otras
-instituciones, y se preentrena sobre un conjunto masivo de imágenes hiperespectrales. Se usa
-como base común para tareas de interpretación hiperespectral, como clasificación de coberturas,
-detección de cambios y segmentación, que se resuelven reutilizando sus representaciones. En el
-pipeline extrae las características de cada imagen, a partir de las cuales se construye el mapa
-de cambio [[wang2024hypersigma]].
+### 3.2 Extracción de características: transformers y modelos fundacionales hiperespectrales
+El núcleo del sistema es la representación de cada imagen. La arquitectura dominante para
+aprender representaciones visuales es el transformador, propuesto por Vaswani, de Google, en 2017, que sustituye la convolución y la recurrencia por el mecanismo de atención
+[[vaswani2017attention]], y su adaptación a imágenes, el Vision Transformer de Dosovitskiy, de Google, en 2021, que trata la imagen como una secuencia de parches [[dosovitskiy2021vit]].
+Sobre esta base surgen los modelos fundacionales, preentrenados a gran escala y reutilizables
+sin entrenar desde cero. Esta arquitectura es transversal al proyecto: el transformador es el
+esqueleto común de los tres modelos fundacionales que el sistema integra, HyperSIGMA para la
+extracción de características, Segment Anything para la segmentación [[kirillov2023sam]] y CLIP
+para el etiquetado [[radford2021clip]]. El proyecto no construye un transformador propio, sino
+que reutiliza modelos ya preentrenados sobre él, lo que confirma que se trata de un concepto
+central del sistema aunque su implementación provenga de terceros.
 
-**Segment Anything.** Es un modelo fundacional de segmentación promptable, capaz de delimitar
-cualquier objeto de una imagen a partir de indicaciones espaciales como puntos o recuadros. Lo
-desarrolla Meta AI. Se usa como bloque de segmentación de propósito general en edición de
-imágenes, anotación de datos y numerosos sistemas de visión, y cada vez más como componente en
-teledetección. En el pipeline recibe la región de cambio y produce su máscara precisa a nivel
-de píxel [[kirillov2023sam]].
+Como alternativas para representar una imagen hiperespectral están los índices espectrales
+calculados a mano, las redes convolucionales entrenadas para la tarea concreta, y las
+características de una red preentrenada en imágenes naturales, como ResNet, que sin embargo
+ignora la dimensión espectral. Frente a ellas, este trabajo usa HyperSIGMA, el primer modelo
+fundacional hiperespectral con más de mil millones de parámetros, desarrollado por Wang, de la Universidad de Wuhan, y preentrenado sobre el conjunto
+HyperGlobal-450K con cerca de 450.000 imágenes [[wang2024hypersigma]]. La elección se justifica
+por dos motivos: HyperSIGMA integra información espacial y espectral con su atención por
+muestreo disperso, y demuestra un desempeño superior en dieciséis conjuntos de datos y siete
+tareas, lo que respalda la transferibilidad de sus representaciones sin reentrenar
+[[wang2024hypersigma]]. Su código es público en el repositorio oficial del grupo WHU-Sigma
+[[whu2024hypersigma_repo]].
 
-**CLIP.** Es un modelo de visión-lenguaje que proyecta imágenes y texto a un espacio común
-donde la correspondencia se mide por similitud. Lo desarrolla OpenAI. Se usa para clasificación
-zero-shot, recuperación entre imagen y texto y como base de sistemas de vocabulario abierto y
-de generación de imágenes. En el pipeline asigna a cada región de cambio una etiqueta de
-vocabulario abierto por similitud entre la imagen y las descripciones candidatas
-[[radford2021clip]].
+### 3.3 Detección de cambios y el emparejamiento en el espacio latente
+La detección de cambios compara imágenes de una misma escena en instantes distintos para
+localizar lo que cambió, y sirve al monitoreo del uso del suelo, la evaluación de desastres y el
+seguimiento urbano y agrícola. Las técnicas se agrupan en álgebra de imágenes, como la
+diferencia, el cociente o el análisis de vectores de cambio; métodos de transformación, como el
+análisis de componentes principales; comparación post-clasificación; y, de forma dominante hoy,
+el aprendizaje profundo con redes siamesas y de atención [[khelifi2020deep]]. En cuanto a en qué
+se aplica, la detección de cambios opera sobre imágenes multiespectrales, de radar de apertura
+sintética y, cada vez más, hiperespectrales, donde la alta resolución espectral permite detectar
+cambios finos; un referente es GETNET, una red convolucional propuesta por Wang en 2019 junto con el conjunto de referencia River para detección de cambios hiperespectral
+[[wang2019getnet]]. La frontera actual es la detección de cambios semántica y de vocabulario
+abierto [[zhu2025semanticcd]].
 
-**BLIP.** Es un modelo de visión-lenguaje que unifica la comprensión y la generación de
-lenguaje a partir de imágenes. Lo desarrolla Salesforce Research. Se usa para descripción de
-imágenes, respuesta a preguntas visuales y recuperación multimodal. En el pipeline genera la
-descripción en lenguaje natural de cada región de cambio, adaptado sobre datos hiperespectrales
-[[li2022blip]].
+La mayoría de estos métodos requiere entrenar con pares etiquetados, escasos en el dominio
+hiperespectral. La alternativa que adopta este trabajo es prescindir del entrenamiento: se
+comparan las representaciones que HyperSIGMA extrae de las dos capturas mediante la similitud
+coseno, la misma métrica con la que los modelos de aprendizaje contrastivo, como CLIP, emparejan
+vectores en un espacio latente común [[radford2021clip]]. Donde la similitud entre las
+representaciones inicial y final es baja, hay cambio. Se justifica por ser un enfoque zero-shot,
+que no depende de datos etiquetados de cambio y aprovecha directamente la calidad de las
+representaciones del modelo fundacional.
 
-**HyperCap.** No es un modelo sino un conjunto de datos, el primero orientado a la descripción
-de imágenes hiperespectrales, con anotaciones textuales a nivel de píxel sobre varios conjuntos
-de referencia. Lo desarrolla un equipo encabezado por Das y colaboradores, con participación de
-grupos de investigación en teledetección. Se usa para entrenar y evaluar modelos de
-visión-lenguaje en el dominio hiperespectral. En el pipeline es la base de entrenamiento del
-módulo de descripción [[das2025hypercap]].
+### 3.4 Segmentación
+La segmentación delimita las regiones a nivel de píxel. Su estado del arte pasa de las redes
+convolucionales de codificador y decodificador, como U-Net de Ronneberger en
+2015 [[ronneberger2015unet]], Mask R-CNN de He, de Facebook AI Research, en 2017
+[[he2017maskrcnn]] y la familia DeepLab, todas entrenadas para un conjunto fijo de clases, al
+paradigma de los modelos fundacionales de segmentación promptable. El referente es Segment
+Anything, desarrollado por Meta AI en 2023, entrenado sobre el conjunto SA-1B con once millones
+de imágenes y mil millones de máscaras, capaz de segmentar cualquier objeto a partir de
+indicaciones espaciales sin reentrenarse [[kirillov2023sam]]; su sucesor, SAM 2, extiende la
+capacidad a video [[ravi2024sam2]]. El modelo y sus pesos están disponibles en el sitio oficial
+de Meta [[meta2023sam_repo]].
+
+Las alternativas entrenadas por clase exigirían anotar datos de las coberturas de interés, lo
+que choca con el carácter abierto del problema. Este trabajo usa Segment Anything porque produce
+máscaras precisas sin depender de clases predefinidas ni de reentrenamiento, y se integra de
+forma natural recibiendo como indicaciones los puntos y recuadros derivados del mapa de cambio.
+Como Segment Anything opera sobre imágenes de tres canales, se le entrega una composición RGB
+del cubo hiperespectral, y cada máscara se confina a la región de cambio.
+
+### 3.5 Etiquetado de vocabulario abierto
+Para nombrar cada región sin un conjunto cerrado de clases, el estado del arte se apoya en los
+modelos de visión-lenguaje, que alinean imagen y texto en un espacio común [[zhang2024vlm]]. El
+referente es CLIP, desarrollado por OpenAI en 2021, entrenado por contraste sobre cerca de
+cuatrocientos millones de pares imagen-texto, que clasifica en modo zero-shot comparando la
+imagen con descripciones textuales arbitrarias [[radford2021clip]]; su implementación oficial es
+pública [[openai2021clip_repo]]. En teledetección esta idea ya se traslada a la segmentación y la
+detección de cambios de vocabulario abierto [[kombol2025trainingfree]] [[zhu2025semanticcd]], y
+en el dominio hiperespectral a la clasificación zero-shot [[pang2025special]].
+
+La alternativa tradicional, un clasificador de clases fijas, obligaría a definir de antemano todo
+lo que puede aparecer y a reentrenar para añadir una categoría. Este trabajo usa CLIP porque
+convierte el etiquetado en una comparación por similitud contra un vocabulario de texto libre,
+editable sin reentrenar, que es la esencia del objetivo de vocabulario abierto. En el pipeline,
+CLIP asigna a cada máscara la etiqueta más afín de ese vocabulario.
+
+### 3.6 Descripción en lenguaje natural
+La última etapa enriquece la etiqueta con una frase. La descripción de imágenes nace con modelos
+de codificador convolucional y decodificador recurrente, como Show and Tell de Vinyals, de Google, en 2015 [[vinyals2015show]], y hoy la dominan los modelos de
+visión-lenguaje preentrenados como BLIP, desarrollado por Salesforce Research en 2022, que
+unifica comprensión y generación [[li2022blip]]; su código es público [[salesforce2022blip_repo]].
+En teledetección la descripción cuenta con conjuntos propios como RSICD [[lu2017rsicd]], pero
+limitados a imágenes ópticas de tres canales. El salto al dominio hiperespectral es muy reciente
+y lo habilita HyperCap, el primer conjunto de descripción hiperespectral con anotaciones a nivel
+de píxel, desarrollado por Das, del Vellore Institute of Technology [[das2025hypercap]].
+
+La alternativa de aplicar un modelo de descripción de imágenes naturales ignora la información
+espectral del cubo. Por eso este trabajo, en su etapa opcional de descripción, adapta un modelo
+de tipo BLIP cuyo codificador visual se sustituye por uno que consume directamente el cubo
+hiperespectral, entrenado sobre HyperCap. Se justifica porque genera una caracterización más
+rica que una sola etiqueta y aprovecha la dimensión espectral completa.
+
+### 3.7 Aprendizaje zero-shot
+El aprendizaje zero-shot designa la capacidad de un modelo para resolver una tarea o reconocer
+categorías que no aparecieron en su entrenamiento, apoyándose en conocimiento previo que
+relaciona lo conocido con lo nuevo. El término se acuña con Palatucci en 2009,
+que predicen clases nunca vistas mediante códigos de salida semánticos [[palatucci2009zeroshot]],
+en paralelo con los enfoques basados en atributos de Lampert, que transfieren
+descripciones entre clases [[lampert2009attribute]].
+
+Con la llegada de los modelos preentrenados a gran escala, el zero-shot se generaliza. CLIP
+clasifica imágenes en categorías descritas solo con texto, sin ejemplos etiquetados
+[[radford2021clip]], y la idea se extiende al reconocimiento de vocabulario abierto, la
+segmentación [[kombol2025trainingfree]] y, en teledetección, a la clasificación hiperespectral
+[[pang2025special]] y la detección de cambios semánticos [[zhu2025semanticcd]]. Su validez
+descansa en que un modelo fundacional, tras preentrenarse sobre volúmenes masivos de datos,
+captura conocimiento general y transferible, que permite generalizar a tareas y categorías
+nuevas sin verlas, siempre que se expresen en un espacio semántico común, por ejemplo el del
+lenguaje [[wang2024hypersigma]] [[radford2021clip]].
+
+Las alternativas son el aprendizaje supervisado, que exige un conjunto etiquetado para cada
+tarea y clase; el ajuste fino de un modelo preentrenado, que necesita algunos ejemplos anotados;
+y el aprendizaje con pocos ejemplos, o few-shot. Todas requieren datos etiquetados del problema
+concreto. Este trabajo adopta el zero-shot porque los pares hiperespectrales bitemporales con
+verdad de terreno son escasos y costosos de anotar, y porque el objetivo mismo, detectar y
+nombrar cambios con vocabulario libre, es incompatible con un conjunto cerrado de clases
+entrenadas. El sistema encadena modelos fundacionales sin entrenar sobre la tarea: compara
+representaciones por similitud coseno para el cambio y compara con texto para la etiqueta, de
+modo que todo el proceso opera sin ejemplos etiquetados de detección de cambios.
+
+### 3.8 Vacío de investigación
+La revisión anterior muestra que cada pieza está resuelta por separado: hay modelos fundacionales
+hiperespectrales [[wang2024hypersigma]], segmentación promptable [[kirillov2023sam]], etiquetado
+de vocabulario abierto [[radford2021clip]] y descripción hiperespectral [[das2025hypercap]]. El
+vocabulario abierto y el zero-shot están consolidados en imágenes RGB y empiezan a aparecer en
+teledetección [[zhu2025semanticcd]] [[kombol2025trainingfree]]. Sin embargo, ninguna propuesta
+los integra para detectar y describir cambios, con vocabulario libre y sin entrenamiento, sobre
+imágenes hiperespectrales bitemporales. Ese vacío es el que aborda este trabajo.
 
 ---
 
@@ -379,6 +487,17 @@ marco de referencia.
 | `vinyals2015show` | Vinyals et al., *Show and Tell: A Neural Image Caption Generator*, CVPR 2015 | cv-foundation.org — Vinyals_Show_and_Tell_2015_CVPR | Origen neuronal de la descripción de imágenes: codificador convolucional más decodificador recurrente. |
 | `lu2017rsicd` | Lu et al., *Exploring Models and Data for Remote Sensing Image Caption Generation*, IEEE TGRS 56(4):2183–2195, 2018 | arxiv.org/abs/1712.07835 | Descripción de imágenes en teledetección; conjunto RSICD; estado del arte previo al dominio hiperespectral. |
 | `bengio2013representation` | Bengio, Courville & Vincent, *Representation Learning: A Review and New Perspectives*, IEEE TPAMI 35(8):1798–1828, 2013 | doi.org/10.1109/TPAMI.2013.50 | Fundamento del aprendizaje de representaciones; los *embeddings* como espacio semántico de las tareas posteriores. |
+| `goetz1985imaging` | Goetz, Vane, Solomon & Rock, *Imaging Spectrometry for Earth Remote Sensing*, Science 228(4704):1147–1153, 1985 | doi.org/10.1126/science.228.4704.1147 | Origen de la espectrometría de imagen; nacimiento histórico de la imagen hiperespectral. |
+| `ronneberger2015unet` | Ronneberger, Fischer & Brox, *U-Net: Convolutional Networks for Biomedical Image Segmentation*, MICCAI 2015 | arxiv.org/abs/1505.04597 | Alternativa de segmentación: red convolucional codificador-decodificador entrenada por clase. |
+| `he2017maskrcnn` | He, Gkioxari, Dollár & Girshick, *Mask R-CNN*, ICCV 2017 | arxiv.org/abs/1703.06870 | Alternativa de segmentación de instancias entrenada por clase, de Facebook AI Research. |
+| `ravi2024sam2` | Ravi et al., *SAM 2: Segment Anything in Images and Videos*, arXiv 2024, Meta AI | arxiv.org/abs/2408.00714 | Sucesor de SAM; segmentación promptable extendida a video. |
+| `wang2019getnet` | Wang, Yuan, Du & Li, *GETNET: A General End-to-End 2-D CNN Framework for Hyperspectral Image Change Detection*, IEEE TGRS 57(1):3–13, 2019 | arxiv.org/abs/1905.01662 | Detección de cambios hiperespectral con CNN; conjunto de referencia River. |
+| `whu2024hypersigma_repo` | WHU-Sigma, *HyperSIGMA — repositorio oficial* | github.com/WHU-Sigma/HyperSIGMA | Fuente del desarrollador de HyperSIGMA; código y pesos. |
+| `meta2023sam_repo` | Meta AI, *Segment Anything — sitio oficial* | segment-anything.com | Fuente del desarrollador de SAM; documentación, demo y pesos. |
+| `openai2021clip_repo` | OpenAI, *CLIP — repositorio oficial* | github.com/openai/CLIP | Fuente del desarrollador de CLIP; código e implementación. |
+| `salesforce2022blip_repo` | Salesforce Research, *BLIP — repositorio oficial* | github.com/salesforce/BLIP | Fuente del desarrollador de BLIP; código e implementación. |
+| `palatucci2009zeroshot` | Palatucci, Pomerleau, Hinton & Mitchell, *Zero-shot Learning with Semantic Output Codes*, NIPS 2009 | papers.nips.cc/paper/3650 | Origen del término aprendizaje zero-shot; predicción de clases no vistas. |
+| `lampert2009attribute` | Lampert, Nickisch & Harmeling, *Learning to Detect Unseen Object Classes by Between-Class Attribute Transfer*, CVPR 2009 | doi.org/10.1109/CVPR.2009.5206594 | Zero-shot basado en atributos; transferencia de descripciones entre clases. |
 | `wang2024hypersigma` | Wang et al., *HyperSIGMA: Hyperspectral Intelligence Comprehension Foundation Model*, IEEE TPAMI 2025 | arxiv.org/abs/2406.11519 | Definición de modelo fundacional hiperespectral; extracción de características; base del mapa de cambio por similitud. |
 | `radford2021clip` | Radford et al., *Learning Transferable Visual Models From Natural Language Supervision*, ICML 2021 | arxiv.org/abs/2103.00020 | Modelo de visión-lenguaje; espacio común imagen-texto; clasificación zero-shot y etiquetado por texto libre. |
 | `pang2025special` | Pang et al., *SPECIAL: Zero-shot Hyperspectral Image Classification With CLIP*, arXiv 2025 | arxiv.org/abs/2501.16222 | Aprendizaje zero-shot aplicado a la clasificación de coberturas hiperespectrales. |
@@ -396,17 +515,7 @@ marco de referencia.
    *Marco de referencia*.
 3. Redactar el estado del arte de la sección 3 como argumento hilado, no como lista.
 
-## 6. Figuras a incluir cuando se redacte el LaTeX
+## 6. Figuras
 
-Estas figuras deben incorporarse al documento cuando se pase el marco al LaTeX. No van en el
-borrador markdown, pero quedan registradas aquí para no olvidarlas.
-
-| Figura | Qué es | De dónde sale | Dónde va |
-|---|---|---|---|
-| Firmas espectrales | Gráfica de reflectancia frente a banda para varios materiales de la escena | Se genera de los datos de prueba extrayendo el espectro de píxeles representativos | Sección 2.1, Imágenes hiperespectrales |
-| Representación del hipercubo | Esquema del cubo con dos ejes espaciales y un eje espectral | Ilustración propia, no copiada de otra fuente | Sección 2.1, Imágenes hiperespectrales |
-| Par bitemporal de prueba | Composiciones RGB de las dos capturas de la misma escena | `hyperglobal/imgs/barbara/barbara_2013.mat` y `barbara_2014.mat`, renderizadas con la etapa `rgb` del pipeline | Sección 2.2, Detección de cambios, o Metodología |
-
-Notas: las tres figuras hay que **generarlas**; la de firmas espectrales y la del par
-bitemporal salen de los datos de prueba, la del hipercubo es un diagrama. No copiar figuras
-con derechos de autor de otras publicaciones.
+La lista completa y autoritativa de las figuras del plan, con su fuente y su ubicación, vive en
+un archivo aparte: `figuras-plan.md`. Se mantiene ahí para no duplicarla ni desincronizarla.
