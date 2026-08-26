@@ -15,4 +15,6 @@ HyperCap/
 
 # Salidas y material de referencia
 *.png
+# Excepción: figuras del plan (assets del LaTeX, deben versionarse)
+!Template___Plan_TrabajoGrado/figuras/*.png
 papers/

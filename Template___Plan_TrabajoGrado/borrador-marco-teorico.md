@@ -205,23 +205,24 @@ codificadores, uno visual y uno textual, para proyectar ambas modalidades a un e
 donde la correspondencia se mide por similitud, lo que habilita la clasificación por texto
 libre y el etiquetado de vocabulario abierto [[radford2021clip]].
 
-La descripción de imágenes, o generación de subtítulos, va un paso más allá de la
-clasificación y produce frases en lenguaje natural que resumen el contenido visual. Los
-primeros modelos neuronales de esta tarea combinaban un codificador convolucional con un
-decodificador recurrente que generaba la frase palabra por palabra; en palabras de sus
-autores, un modelo que "can be used to generate natural sentences describing an image"
-[[vinyals2015show]]. La línea actual la dominan los modelos de visión-lenguaje preentrenados
-a gran escala, como BLIP, que unifican en una sola arquitectura la comprensión y la
-generación de lenguaje a partir de imágenes [[li2022blip]].
+La descripción de imágenes, también llamada generación de subtítulos, va un paso más allá de
+la clasificación: en lugar de asignar una etiqueta, genera una frase en lenguaje natural que
+resume el contenido visual. Los primeros modelos neuronales de esta tarea acoplan dos piezas,
+un codificador convolucional que condensa la imagen en un vector y un decodificador recurrente
+que, a partir de ese vector, produce la frase palabra por palabra; sus autores lo describen
+como un modelo que "can be used to generate natural sentences describing an image"
+[[vinyals2015show]]. Hoy la línea la dominan los modelos de visión-lenguaje preentrenados a gran
+escala, como BLIP, que reúnen en una sola arquitectura la comprensión de la imagen y la
+generación del texto que la describe [[li2022blip]].
 
-En teledetección, la descripción de imágenes tiene una trayectoria propia. La construcción
-de conjuntos de datos específicos, como RSICD, con cerca de once mil imágenes de teledetección
-y varias descripciones por imagen, permitió entrenar y evaluar modelos de descripción
-adaptados a las escenas aéreas y satelitales [[lu2017rsicd]]. Sin embargo, ese avance se
-concentró en imágenes ópticas de tres canales. El traslado al dominio hiperespectral es mucho
-más reciente: HyperCap es el primer conjunto de datos y punto de referencia orientado a la
-descripción de coberturas terrestres a partir de imágenes hiperespectrales, y abre la puerta
-a aplicar modelos de visión-lenguaje sobre el cubo espectral completo [[das2025hypercap]].
+En teledetección, la descripción de imágenes se apoya en conjuntos de datos propios. RSICD,
+por ejemplo, reúne cerca de once mil imágenes de teledetección con varias descripciones cada
+una, y permite entrenar y evaluar modelos adaptados a las escenas aéreas y satelitales
+[[lu2017rsicd]]. Ese avance, sin embargo, se dio sobre imágenes ópticas de tres canales. La
+extensión al dominio hiperespectral es mucho más reciente: HyperCap es el primer conjunto de
+datos y punto de referencia para describir coberturas a partir de imágenes hiperespectrales, y
+hace posible aplicar modelos de visión-lenguaje sobre el cubo espectral completo
+[[das2025hypercap]].
 
 En nuestro sistema, estos modelos ocupan las dos últimas etapas semánticas del pipeline. CLIP
 asigna a cada región de cambio una etiqueta de vocabulario abierto por similitud entre imagen
@@ -347,30 +348,43 @@ para el etiquetado [[radford2021clip]]. El proyecto no construye un transformado
 que reutiliza modelos ya preentrenados sobre él, lo que confirma que se trata de un concepto
 central del sistema aunque su implementación provenga de terceros.
 
-Como alternativas para representar una imagen hiperespectral están los índices espectrales
-calculados a mano, las redes convolucionales entrenadas para la tarea concreta, y las
-características de una red preentrenada en imágenes naturales, como ResNet, que sin embargo
-ignora la dimensión espectral. Frente a ellas, este trabajo usa HyperSIGMA, el primer modelo
-fundacional hiperespectral con más de mil millones de parámetros, desarrollado por Wang, de la Universidad de Wuhan, y preentrenado sobre el conjunto
-HyperGlobal-450K con cerca de 450.000 imágenes [[wang2024hypersigma]]. La elección se justifica
-por dos motivos: HyperSIGMA integra información espacial y espectral con su atención por
-muestreo disperso, y demuestra un desempeño superior en dieciséis conjuntos de datos y siete
-tareas, lo que respalda la transferibilidad de sus representaciones sin reentrenar
-[[wang2024hypersigma]]. Su código es público en el repositorio oficial del grupo WHU-Sigma
-[[whu2024hypersigma_repo]].
+Existen dos maneras de obtener esta representación. La tradicional es calcularla a mano
+mediante índices espectrales, fórmulas que combinan bandas concretas para resaltar un material,
+como los índices de vegetación; son simples pero rígidas, pues cada índice captura una sola
+propiedad y exige saber de antemano qué se busca. La alternativa moderna, que adopta este
+trabajo, es aprenderla con un modelo fundacional. HyperSIGMA representa la imagen dividiendo el
+cubo en parches y procesándolos con un Vision Transformer espacial que, mediante su atención por
+muestreo disperso, produce un mapa denso de vectores de características, uno por posición, que
+codifican de forma conjunta la información espacial y espectral de la escena. Es el primer modelo
+fundacional hiperespectral con más de mil millones de parámetros, desarrollado por Wang, de la
+Universidad de Wuhan, y preentrenado sobre el conjunto HyperGlobal-450K con cerca de 450.000
+imágenes [[wang2024hypersigma]]. La elección se justifica porque estas representaciones son mucho
+más ricas que un índice manual y, al haberse aprendido sobre datos hiperespectrales, resultan
+transferibles a tareas nuevas sin reentrenar, como demuestra su desempeño superior en dieciséis
+conjuntos de datos y siete tareas [[wang2024hypersigma]]. Su código es público en el repositorio
+oficial del grupo WHU-Sigma [[whu2024hypersigma_repo]].
 
 ### 3.3 Detección de cambios y el emparejamiento en el espacio latente
 La detección de cambios compara imágenes de una misma escena en instantes distintos para
 localizar lo que cambió, y sirve al monitoreo del uso del suelo, la evaluación de desastres y el
-seguimiento urbano y agrícola. Las técnicas se agrupan en álgebra de imágenes, como la
-diferencia, el cociente o el análisis de vectores de cambio; métodos de transformación, como el
-análisis de componentes principales; comparación post-clasificación; y, de forma dominante hoy,
-el aprendizaje profundo con redes siamesas y de atención [[khelifi2020deep]]. En cuanto a en qué
+seguimiento urbano y agrícola. Las técnicas se agrupan en cuatro familias. Las de álgebra de imágenes operan directamente sobre
+los valores de los píxeles, como la diferencia, el cociente o el análisis de vectores de cambio.
+Las de transformación proyectan los datos a otro espacio antes de compararlos, como el análisis
+de componentes principales. Las de comparación post-clasificación clasifican cada imagen por
+separado y luego contrastan las clases. Y, de forma dominante hoy, las de aprendizaje profundo
+aprenden a detectar el cambio con redes siamesas y de atención [[khelifi2020deep]]. En cuanto a en qué
 se aplica, la detección de cambios opera sobre imágenes multiespectrales, de radar de apertura
 sintética y, cada vez más, hiperespectrales, donde la alta resolución espectral permite detectar
-cambios finos; un referente es GETNET, una red convolucional propuesta por Wang en 2019 junto con el conjunto de referencia River para detección de cambios hiperespectral
-[[wang2019getnet]]. La frontera actual es la detección de cambios semántica y de vocabulario
-abierto [[zhu2025semanticcd]].
+cambios finos. Un referente es GETNET, una red convolucional de dos dimensiones de extremo a
+extremo propuesta por Wang en 2019 para detección de cambios hiperespectral [[wang2019getnet]].
+Para manejar la alta dimensionalidad del cubo, GETNET no compara solo las bandas, sino que
+incorpora información de abundancia a nivel de subpíxel obtenida por desmezclado espectral y la
+combina en una matriz de afinidad mixta que fusiona varias fuentes de información; sobre esa
+representación, la red aprende a clasificar cada píxel como cambiado o no cambiado. Junto con el
+método, los autores publican un conjunto de datos de referencia, conocido como River, creado
+expresamente para comparar de forma objetiva los distintos métodos sobre los mismos datos, algo
+que antes escaseaba en este dominio. La frontera actual es la detección de cambios semántica y de
+vocabulario abierto [[zhu2025semanticcd]].
 
 La mayoría de estos métodos requiere entrenar con pares etiquetados, escasos en el dominio
 hiperespectral. La alternativa que adopta este trabajo es prescindir del entrenamiento: se
