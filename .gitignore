@@ -18,3 +18,12 @@ HyperCap/
 # Excepción: figuras del plan (assets del LaTeX, deben versionarse)
 !Template___Plan_TrabajoGrado/figuras/*.png
 papers/
+
+# Artefactos de build de LaTeX
+*.aux
+*.log
+*_build.log
+
+# Archivos temporales / de bloqueo de Office
+~$*
+~WRL*.tmp
