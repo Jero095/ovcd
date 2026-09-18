@@ -338,8 +338,8 @@ Para el desarrollo de este trabajo se propone una metodología organizada en fas
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.72\linewidth]{figuras/pipeline.png}
-\caption{Cadena de procesamiento del sistema OVCD. El par bitemporal se carga y se alinea a un espacio espectral común; HyperSIGMA extrae las características de cada imagen; su comparación por similitud coseno produce el mapa de cambio; Segment Anything segmenta las regiones sobre una composición RGB; CLIP les asigna una etiqueta de vocabulario abierto; y, de forma opcional, un modelo de tipo BLIP adaptado sobre HyperCap genera una descripción. Las etapas en verde emplean un modelo fundacional.}
+\includegraphics[width=\linewidth]{figuras/pipeline_figura.png}
+\caption{Cadena de procesamiento del sistema OVCD, organizada en tres bloques: preprocesamiento, detección y segmentación del cambio, e interpretación semántica. El par bitemporal se carga y se alinea a un espacio espectral común; HyperSIGMA extrae las características de cada imagen; su comparación por similitud coseno produce el mapa de cambio; Segment Anything segmenta las regiones sobre una composición RGB; CLIP les asigna una etiqueta de vocabulario abierto; y, de forma opcional, un modelo de tipo BLIP adaptado sobre HyperCap genera una descripción.}
 \label{fig:pipeline}
 \end{figure}
 
