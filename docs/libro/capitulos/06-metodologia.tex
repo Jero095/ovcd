@@ -1,0 +1,119 @@
+% 3. Metodologia. Fuente: plan aprobado, seccion 5.
+% OJO: el texto viene del plan y esta en futuro ("se implementara"). En el
+% libro debe describir lo que se hizo, en pasado, y anadir la configuracion
+% real usada (versiones, parametros, hardware) para que sea reproducible.
+\section{Metodología}
+
+Para el desarrollo de este trabajo se propone una metodología organizada en fases, cada una compuesta por un conjunto de actividades que describen las acciones concretas requeridas para llevarla a cabo. Estas fases buscarán la consecución de los objetivos específicos, donde cada objetivo tendrá correspondencia con una fase.
+
+\subsection{Fase 1. Carga, alineación espectral y mapa inicial de cambios}
+
+Esta fase comprende la lectura de los pares de imágenes hiperespectrales bitemporales y su preparación para el análisis, de modo que ambas adquisiciones queden expresadas en un mismo espacio espectral y en un rango de valores homogéneo. A partir de las imágenes alineadas se extraerán representaciones profundas con el modelo fundacional HyperSIGMA y se compararán mediante la similitud coseno para obtener un mapa inicial de cambios, que se binarizará y depurará para localizar las regiones con diferencias significativas entre las dos adquisiciones.
+
+\subsubsection{Actividad 1.1. Carga de los pares hiperespectrales}
+
+Se implementará un módulo de carga capaz de leer imágenes hiperespectrales en formatos ENVI, MATLAB y GeoTIFF, extrayendo de cada archivo el cubo de datos con sus dimensiones espaciales y espectrales, junto con las longitudes de onda asociadas a cada banda. Cuando el archivo no contenga la información de las bandas, como ocurre con los archivos del conjunto Santa Barbara, las longitudes de onda se tomarán de la especificación del sensor que capturó la imagen, ya que esa información es necesaria para alinear las adquisiciones a un espacio espectral de referencia común.
+
+\subsubsection{Actividad 1.2. Alineación a un espacio espectral de referencia}
+
+Se reinterpolarán las bandas de ambas imágenes a un espacio espectral de referencia común mediante interpolación lineal, garantizando que las dos adquisiciones tengan el mismo número de bandas y las mismas longitudes de onda. Posteriormente se normalizará cada banda de forma independiente a un rango fijo, para homogeneizar los niveles de reflectancia antes de la extracción de características.
+
+\subsubsection{Actividad 1.3. Carga del modelo fundacional HyperSIGMA}
+
+Se cargará el codificador espacial de HyperSIGMA a partir de sus pesos preentrenados sobre imágenes hiperespectrales. Durante la construcción del modelo se fijará una semilla de inicialización, de modo que cada ejecución produzca las mismas representaciones y, con ello, resultados reproducibles.
+
+\subsubsection{Actividad 1.4. Extracción de características densas}
+
+Se procesará cada imagen alineada con el modelo para obtener un mapa de características profundo. Las imágenes de gran tamaño se dividirán en bloques solapados que se procesarán por separado y se combinarán mediante un promedio ponderado, con el fin de evitar artefactos en los bordes y superar las limitaciones de memoria.
+
+\subsubsection{Actividad 1.5. Cálculo del mapa de cambio}
+
+Se calculará un mapa de cambio comparando las características de ambas imágenes píxel a píxel mediante la similitud coseno, de manera que los valores altos correspondan a las zonas donde la representación semántica varió. El mapa continuo se llevará al tamaño original de la escena y se normalizará a un rango fijo para facilitar su interpretación.
+
+\subsubsection{Actividad 1.6. Binarización y depuración del mapa de cambio}
+
+Se binarizará el mapa de cambio mediante un umbral automático, como el método de Otsu, para aislar las regiones que presentan diferencias significativas entre las dos adquisiciones. Posteriormente se aplicarán operaciones morfológicas que eliminen el ruido y las regiones aisladas de tamaño reducido, obteniendo así el mapa inicial de cambios que servirá de base para las fases siguientes.
+
+\subsection{Fase 2. Segmentación y etiquetado de vocabulario abierto}
+
+Esta fase transforma las regiones de cambio, inicialmente difusas, en máscaras precisas a nivel de píxel y asigna a cada una una etiqueta semántica tomada de un vocabulario textual libre. Para ello se compondrá una imagen RGB de la escena, se generarán indicaciones espaciales a partir del mapa de cambio para guiar la segmentación con Segment Anything y se clasificará cada región con CLIP contra un vocabulario de tipos de cambio, consolidando por región su máscara, su etiqueta y su puntaje de similitud.
+
+\subsubsection{Actividad 2.1. Composición de una imagen RGB de la escena}
+
+Se sintetizará una imagen de tres canales a partir del cubo hiperespectral, seleccionando las bandas más cercanas a los colores rojo, verde y azul o mediante una reducción de dimensionalidad. Esta imagen servirá de entrada para el modelo de segmentación y para el modelo de visión-lenguaje, que operan sobre imágenes de tres canales.
+
+\subsubsection{Actividad 2.2. Generación de indicaciones espaciales}
+
+Se procesará el mapa de cambio binarizado para extraer las regiones conectadas, descartando aquellas cuya área sea inferior a un umbral mínimo. Por cada región se generará una indicación espacial, en forma de recuadro delimitador o de punto central, junto con una máscara aproximada que servirá para acotar la segmentación.
+
+\subsubsection{Actividad 2.3. Segmentación con Segment Anything}
+
+Se ejecutará el modelo Segment Anything sobre la imagen de la escena usando las indicaciones generadas, obteniendo una máscara precisa por cada región. Cada máscara se intersecará con la región de cambio correspondiente para centrarla a la zona efectivamente modificada.
+
+\subsubsection{Actividad 2.4. Definición del vocabulario de cambio}
+
+Se establecerá un vocabulario abierto formado por descripciones textuales de los tipos de cambio de interés, como deforestación, construcción urbana, inundación o incendio, que podrá ampliarse o modificarse según la aplicación sin necesidad de reentrenar el sistema.
+
+\subsubsection{Actividad 2.5. Clasificación con CLIP}
+
+Se recortará cada región en las imágenes de ambos tiempos y se codificarán tanto los recortes como el vocabulario en el espacio de representación compartido de CLIP. A cada región se le asignará la descripción textual de mayor similitud, obteniendo así una etiqueta de vocabulario abierto para el cambio detectado.
+
+\subsubsection{Actividad 2.6. Consolidación de máscaras y etiquetas}
+
+Se reunirá por cada región de cambio su máscara, su etiqueta y el puntaje de similitud obtenido con CLIP. Las regiones cuyo puntaje sea inferior a un umbral mínimo se marcarán como cambio no clasificado, de modo que el sistema no fuerce una etiqueta cuando ninguna descripción del vocabulario resulte suficientemente afín.
+
+\subsection{Fase 3. Descripción en lenguaje natural con HyperCap}
+
+Esta fase complementa la etiqueta de vocabulario abierto con una descripción en lenguaje natural de cada región, generada directamente a partir del cubo hiperespectral para aprovechar la firma espectral completa. Comprende la preparación del conjunto de datos HyperCap, la construcción, el entrenamiento y la evaluación de un modelo de descripción basado en BLIP, y su aplicación a cada región de cambio para describir el estado anterior, el estado posterior y la transformación ocurrida entre ambos.
+
+\subsubsection{Actividad 3.1. Preparación del conjunto de datos HyperCap}
+
+Se descargarán las escenas anotadas del conjunto de datos HyperCap y se dividirán en subconjuntos de entrenamiento, validación y prueba. Los datos se normalizarán de la misma forma en que se prepararán las imágenes dentro del sistema, para que el modelo reciba durante el entrenamiento entradas equivalentes a las que encontrará en uso.
+
+\subsubsection{Actividad 3.2. Construcción del modelo de descripción}
+
+Se construirá un modelo de generación de descripciones basado en la arquitectura BLIP, reemplazando su codificador de visión por uno específico para datos hiperespectrales que procesa parches espectrales de la escena. Se añadirá una capa de adaptación que conecte este codificador con el decodificador de texto encargado de producir la descripción.
+
+\subsubsection{Actividad 3.3. Entrenamiento sobre el conjunto de datos HyperCap}
+
+Se entrenará el modelo de descripción con las escenas anotadas del conjunto de datos HyperCap, que asocia a cada píxel una descripción textual de su cobertura. El entrenamiento se realizará en una unidad de procesamiento gráfico, conservando los pesos del modelo con mejor desempeño sobre el subconjunto de validación.
+
+\subsubsection{Actividad 3.4. Evaluación del modelo de descripción}
+
+Se medirá la calidad de las descripciones generadas sobre el subconjunto de prueba mediante métricas estándar de generación de texto, que comparan cada descripción con las anotaciones de referencia. Esta evaluación permitirá verificar que el modelo produce descripciones coherentes antes de integrarlo al sistema.
+
+\subsubsection{Actividad 3.5. Generación de descripciones por región}
+
+Se extraerá un parche centrado en cada región de cambio y se generará una descripción para el estado anterior y para el estado posterior, a partir del cubo hiperespectral de cada adquisición.
+
+\subsubsection{Actividad 3.6. Descripción del cambio bitemporal}
+
+Se combinarán las descripciones de ambos estados en una única descripción de la transformación ocurrida en cada zona. Esta descripción se asociará a la región junto con su máscara y su etiqueta, complementando la etiqueta de vocabulario abierto con información semántica más detallada.
+
+\subsection{Fase 4. Integración y evaluación del sistema}
+
+Esta fase reúne todas las etapas anteriores en una única cadena de procesamiento automatizada, define la forma en que se presentan los resultados y evalúa de forma objetiva su desempeño. Para ello se contrastarán las detecciones con el \textit{ground truth} de los conjuntos de referencia mediante métricas de detección de cambios, se compararán los resultados con métodos existentes y con distintas configuraciones del sistema, y se analizará la coherencia de las etiquetas y descripciones asignadas.
+
+\subsubsection{Actividad 4.1. Orquestación del pipeline}
+
+Se integrarán las etapas de carga, alineación, extracción de características, detección de cambio, segmentación, etiquetado y descripción en una única cadena ejecutable, controlada mediante una interfaz de línea de comandos que permita configurar los parámetros del proceso.
+
+\subsubsection{Actividad 4.2. Visualización de resultados}
+
+Se generará una visualización que presente las imágenes de ambos tiempos, el mapa de cambio y las regiones detectadas con sus máscaras, etiquetas y descripciones superpuestas, de manera que los resultados sean fáciles de interpretar.
+
+\subsubsection{Actividad 4.3. Selección del conjunto de datos de referencia}
+
+Se prepararán como conjunto de referencia los pares hiperespectrales bitemporales Santa Barbara y Bay Area, del sensor AVIRIS \parencite{hasanlou2018hyperspectral}, y River, del sensor Hyperion \parencite{wang2019getnet}, que cuentan con \textit{ground truth}, es decir, con un mapa de referencia que indica las zonas realmente modificadas entre las dos adquisiciones.
+
+\subsubsection{Actividad 4.4. Evaluación de la detección con métricas}
+
+Se compararán las regiones de cambio detectadas por el sistema con el \textit{ground truth} de cada par y se calcularán métricas de desempeño como la precisión, la exhaustividad, el puntaje F1 y la intersección sobre unión, lo que permitirá cuantificar la calidad de la detección.
+
+\subsubsection{Actividad 4.5. Comparación con métodos existentes y análisis de configuraciones}
+
+Se contrastarán los resultados obtenidos con los reportados por métodos de detección de cambios hiperespectral sobre los mismos conjuntos, como GETNET. Además se evaluará el efecto de los principales parámetros del sistema, como el umbral de binarización, la selección de bandas de la imagen RGB y el vocabulario empleado, sobre las métricas de detección.
+
+\subsubsection{Actividad 4.6. Análisis de la caracterización semántica}
+
+Se analizará la coherencia de las etiquetas y descripciones asignadas mediante la inspección de las regiones detectadas en cada escena, contrastando el tipo de cambio propuesto con el contenido observado en las composiciones RGB de ambos tiempos. Este análisis permitirá valorar la capacidad del sistema para caracterizar semánticamente los cambios más allá de su localización.

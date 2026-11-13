@@ -1,0 +1,52 @@
+\documentclass[12pt]{article}
+\input{preambulo-uis}
+
+\begin{document}
+
+% 1. Portadilla (pagina 1)
+\input{capitulos/00-portadilla}
+
+% 2-3. Dedicatoria y Agradecimientos: opcionales, no incluidos.
+
+% 4. Tabla de Contenido
+\clearpage
+\tableofcontents
+
+% 5. Lista de Tablas
+\clearpage
+\listoftables
+
+% 6. Lista de Figuras
+\clearpage
+\listoffigures
+
+% 7. Lista de Apendices: no hay apendices todavia.
+% 8. Glosario: opcional, no incluido.
+
+% 9-10. Resumen y Abstract, cada uno en hoja propia
+\input{capitulos/01-resumen}
+\input{capitulos/02-abstract}
+
+% 11. Introduccion (sin numero)
+\input{capitulos/03-introduccion}
+
+% 12. 1. Objetivos
+\input{capitulos/04-objetivos}
+
+% 13. Cuerpo del trabajo
+\input{capitulos/05-marco-referencia}
+\input{capitulos/06-metodologia}
+\input{capitulos/07-resultados}
+\input{capitulos/08-discusion}
+
+% 14-15. Conclusiones y Recomendaciones
+\input{capitulos/09-conclusiones}
+\input{capitulos/10-recomendaciones}
+
+% 16. Referencias Bibliograficas (sin numero, hoja nueva)
+\seccionsinnumero{Referencias Bibliográficas}
+\printbibliography[heading=none]
+
+% 17. Apendices: no hay apendices todavia.
+
+\end{document}

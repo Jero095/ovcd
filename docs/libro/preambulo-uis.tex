@@ -1,0 +1,144 @@
+% ===========================================================================
+% preambulo-uis.tex
+% Formato de trabajo de grado UIS, APA 7.
+% Ver AGENTS.md, secciones 1 a 9. No cambiar valores de forma sin instruccion.
+% ===========================================================================
+
+% ---------- Codificacion, idioma y fuente ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% es-tabla: "Tabla" en vez de "Cuadro".
+% es-nosectiondot: sin punto tras numeros de seccion (se repone solo en nivel 1).
+\usepackage[spanish,es-tabla,es-nosectiondot]{babel}
+\usepackage{amsmath}               % antes de newtxmath
+\usepackage{newtxtext}            % Times New Roman
+\usepackage{newtxmath}            % incluye los simbolos de amssymb
+\usepackage{csquotes}
+
+% ---------- Pagina: carta, margenes 2,54 cm uniformes ----------
+\usepackage[letterpaper,margin=2.54cm,headheight=15pt]{geometry}
+
+% ---------- Interlineado doble, sangria 1,27 cm, justificado ----------
+\usepackage{setspace}
+\doublespacing
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{0pt}
+
+% ---------- Paquetes de contenido ----------
+\usepackage{graphicx}
+\graphicspath{{figuras/}}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,babel}
+
+\definecolor{morado1}{HTML}{7B6BAF}
+\definecolor{azul2}{HTML}{A4C2F4}
+\definecolor{verde1}{HTML}{76A5AF}
+\definecolor{lima1}{HTML}{B6D7A8}
+
+% ---------- Cornisa y paginacion ----------
+% Cornisa: izquierda, MAYUSCULA SOSTENIDA, maximo 50 caracteres.
+% Paginacion arabiga desde la portadilla (pagina 1).
+\usepackage{fancyhdr}
+\newcommand{\cornisa}{OPEN VOCABULARY CHANGE DETECTION} % 32 caracteres
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\cornisa}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyhead[L]{\cornisa}%
+  \fancyhead[R]{\thepage}%
+  \renewcommand{\headrulewidth}{0pt}}
+
+% ---------- Jerarquia de titulos (5 niveles APA) ----------
+\usepackage{titlesec}
+\setcounter{secnumdepth}{5}
+% Nivel 1: centrado, negrita, punto tras el numero.
+\titleformat{\section}[block]{\centering\bfseries\normalsize}{\thesection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{2\baselineskip}{2\baselineskip}
+% Nivel 2: margen izquierdo, negrita.
+\titleformat{\subsection}[block]{\bfseries\normalsize}{\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{\baselineskip}{\baselineskip}
+% Nivel 3: margen izquierdo, negrita y cursiva.
+\titleformat{\subsubsection}[block]{\bfseries\itshape\normalsize}{\thesubsubsection}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{\baselineskip}{\baselineskip}
+% Nivel 4: con sangria, negrita, termina en punto, texto en la misma linea.
+\titleformat{\paragraph}[runin]{\bfseries\normalsize}{\theparagraph}{0.5em}{}[.]
+\titlespacing*{\paragraph}{1.27cm}{\baselineskip}{0.5em}
+% Nivel 5: con sangria, negrita y cursiva, termina en punto.
+\titleformat{\subparagraph}[runin]{\bfseries\itshape\normalsize}{\thesubparagraph}{0.5em}{}[.]
+\titlespacing*{\subparagraph}{1.27cm}{\baselineskip}{0.5em}
+
+% Seccion sin numero que inicia en hoja nueva y entra a la Tabla de Contenido
+% (Introduccion, Referencias Bibliograficas, Apendices).
+\newcommand{\seccionsinnumero}[1]{%
+  \clearpage
+  \phantomsection
+  \section*{#1}%
+  \addcontentsline{toc}{section}{#1}}
+
+% ---------- Figuras y tablas: leyenda ARRIBA ----------
+\usepackage{caption}
+\captionsetup{
+  position=top,
+  labelsep=newline,
+  labelfont=bf,
+  textfont=it,
+  justification=raggedright,
+  singlelinecheck=false,
+  font=doublespacing,
+  skip=6pt}
+% Nota bajo figura o tabla: "Nota." en cursiva.
+\newcommand{\nota}[1]{\par\vspace{4pt}{\raggedright\textit{Nota.} #1\par}}
+
+% Nota al pie con llamada fija (* y ** en Resumen y Abstract).
+\newcommand{\notapie}[2]{{\renewcommand{\thefootnote}{#1}\footnote{#2}}}
+
+% Marcador visible para contenido que el autor debe completar.
+\newcommand{\pendiente}[1]{\textcolor{red}{\textbf{[PENDIENTE:} #1\textbf{]}}}
+
+% ---------- Tabla de contenido y listas ----------
+\usepackage{tocloft}
+\addto\captionsspanish{%
+  \renewcommand{\contentsname}{Tabla de Contenido}%
+  \renewcommand{\listfigurename}{Lista de Figuras}%
+  \renewcommand{\listtablename}{Lista de Tablas}%
+  \renewcommand{\tablename}{Tabla}%
+  \renewcommand{\figurename}{Figura}}
+\renewcommand{\cfttoctitlefont}{\hfill\bfseries\normalsize}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\cftloftitlefont}{\hfill\bfseries\normalsize}
+\renewcommand{\cftafterloftitle}{\hfill}
+\renewcommand{\cftlottitlefont}{\hfill\bfseries\normalsize}
+\renewcommand{\cftafterlottitle}{\hfill}
+\renewcommand{\cftsecaftersnum}{.}          % solo el nivel 1 lleva punto
+\renewcommand{\cftsecfont}{\normalfont}
+\renewcommand{\cftsecpagefont}{\normalfont}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftfigpresnum}{Figura }
+\renewcommand{\cfttabpresnum}{Tabla }
+\setlength{\cftfignumwidth}{5.5em}
+\setlength{\cfttabnumwidth}{5em}
+\setlength{\cftbeforesecskip}{0pt}
+
+% ---------- Referencias: APA 7 con biblatex ----------
+\usepackage[style=apa,backend=biber]{biblatex}
+\DeclareLanguageMapping{spanish}{spanish-apa}
+\addbibresource{referencias.bib}
+% "y" en lugar de "&" en citas y lista (spanish-apa.lbx deja smartand=0).
+\AtBeginDocument{%
+  \setcounter{smartand}{2}%
+  \DeclareDelimFormat[parencite,textcite,bib,biblist]{finalnamedelim}{\addspace\bibstring{and}\space}%
+}
+\setlength{\bibhang}{1.27cm}   % sangria francesa
+\setlength{\bibitemsep}{0pt}   % el doble espacio lo da \doublespacing
+
+% ---------- hyperref al final ----------
+\usepackage[hidelinks]{hyperref}

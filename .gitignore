@@ -27,3 +27,6 @@ papers/
 # Archivos temporales / de bloqueo de Office
 ~$*
 ~WRL*.tmp
+# Excepcion: figuras y logo del libro de trabajo de grado
+!docs/libro/figuras/*.png
+!docs/libro/logo_uis.png

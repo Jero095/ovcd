@@ -1,0 +1,14 @@
+# Artefactos de compilacion LaTeX
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.toc
+*.log
+main.pdf
